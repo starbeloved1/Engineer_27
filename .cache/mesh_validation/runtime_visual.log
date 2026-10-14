@@ -1,0 +1,24 @@
+[INFO] [launch]: All log files can be found below /home/starbeloved/.ros/log/2026-10-14-21-21-26-040919-Sel-595829
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [robot_state_publisher-1]: process started with pid [595830]
+[INFO] [rviz2-2]: process started with pid [595832]
+[robot_state_publisher-1] [WARN] [1791984086.082496966] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-1] [INFO] [1791984086.082565313] [arm_preview_state_publisher]: got segment base_link
+[robot_state_publisher-1] [INFO] [1791984086.082598886] [arm_preview_state_publisher]: got segment link_1
+[robot_state_publisher-1] [INFO] [1791984086.082601851] [arm_preview_state_publisher]: got segment link_2
+[robot_state_publisher-1] [INFO] [1791984086.082603985] [arm_preview_state_publisher]: got segment link_3
+[robot_state_publisher-1] [INFO] [1791984086.082605848] [arm_preview_state_publisher]: got segment link_4
+[robot_state_publisher-1] [INFO] [1791984086.082607662] [arm_preview_state_publisher]: got segment link_5
+[robot_state_publisher-1] [INFO] [1791984086.082609846] [arm_preview_state_publisher]: got segment link_6
+[rviz2-2] [INFO] [1791984086.193534125] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-2] [INFO] [1791984086.193629943] [rviz2]: OpenGl version: 4.5 (GLSL 4.5)
+[rviz2-2] [INFO] [1791984086.221405300] [rviz2]: Stereo is NOT SUPPORTED
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [rviz2-2]: sending signal 'SIGINT' to process[rviz2-2]
+[INFO] [robot_state_publisher-1]: sending signal 'SIGINT' to process[robot_state_publisher-1]
+[robot_state_publisher-1] [INFO] [1791984090.846049147] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[rviz2-2] [INFO] [1791984090.846047895] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[rviz2-2] [INFO] [1791984090.847436939] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[robot_state_publisher-1] [INFO] [1791984090.847606264] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [robot_state_publisher-1]: process has finished cleanly [pid 595830]
+[INFO] [rviz2-2]: process has finished cleanly [pid 595832]

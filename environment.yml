@@ -1,0 +1,8 @@
+name: engineer27-mesh
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - -r scripts/mesh_requirements.txt

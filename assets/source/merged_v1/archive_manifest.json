@@ -1,0 +1,41 @@
+{
+  "description": "First full-resolution merged version; do not overwrite",
+  "files": {
+    "arm.urdf": {
+      "bytes": 5504,
+      "sha256": "dbe187f153347b55ac96d25096758ba8dae64605fb9441860bd7f3fd7ff0b2b9"
+    },
+    "mesh_merge_report.json": {
+      "bytes": 4912,
+      "sha256": "79dd4d0041eb28c04211c33059ed2a81b730c70993bc6ef8e0a1e5e953c7ea6b"
+    },
+    "meshes/visual/base_link.stl": {
+      "bytes": 179478684,
+      "sha256": "994720746a719a18e0f33fcab7b3fe5b0e2d77e93f3f0b8cd7a902f446225f91"
+    },
+    "meshes/visual/link_1.stl": {
+      "bytes": 15554784,
+      "sha256": "a086536b3e31f67d04f9f402214cecf23fd1595b03b3d2af618d79d252b5363c"
+    },
+    "meshes/visual/link_2.stl": {
+      "bytes": 18658684,
+      "sha256": "207dc00d145ce090995fc25c45edc7a0f9ac31e0846b6957dbed15544c167256"
+    },
+    "meshes/visual/link_3.stl": {
+      "bytes": 14710884,
+      "sha256": "b1de4659d3e575dadf3966007718427e5360ca9fa5701d668965fb5cefdac4be"
+    },
+    "meshes/visual/link_4.stl": {
+      "bytes": 10573784,
+      "sha256": "9d0aec1d6f5ab4552e93b341276c441438ecd494b8285bc229be1035d97cc50e"
+    },
+    "meshes/visual/link_5.stl": {
+      "bytes": 3504484,
+      "sha256": "55e47900851835cc13fd6b7ff34424303bd07b43316112e154b07a16da3fa773"
+    },
+    "meshes/visual/link_6.stl": {
+      "bytes": 11188984,
+      "sha256": "f4595c9e7253e80fc307c4469ea6cadc771d624b3595500a9a62f9f1ad4410bc"
+    }
+  }
+}
