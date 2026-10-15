@@ -4,7 +4,7 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_trajectory/robot_trajectory.h>
 
-#include <eng_interfaces/action/plan_motion.hpp>
+#include <act_interfaces/action/plan_motion.hpp>
 #include <functional>
 #include <memory>
 #include <moveit_msgs/msg/display_trajectory.hpp>
@@ -16,7 +16,7 @@
 
 namespace arm_planning
 {
-using Action = eng_interfaces::action::PlanMotion;
+using Action = act_interfaces::action::PlanMotion;
 using Codes = moveit_msgs::msg::MoveItErrorCodes;
 using State = moveit::core::RobotState;
 using Scene = planning_scene::PlanningScene;

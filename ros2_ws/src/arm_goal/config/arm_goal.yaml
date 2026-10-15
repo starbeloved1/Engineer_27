@@ -1,12 +1,12 @@
 arm_goal:
   ros__parameters:
-    # 订阅：eng_interfaces/msg/MotionTarget，来自命令发布者；非空 request_id 每次唯一。
+    # 订阅：act_interfaces/msg/MotionTarget，来自命令发布者；非空 request_id 每次唯一。
     target_topic: /arm_goal/target
     # 订阅：std_msgs/msg/String，data 为需要取消的当前 request_id。
     cancel_topic: /arm_goal/cancel
-    # 发布：eng_interfaces/msg/MotionFeedback，携带 request_id 和阶段反馈。
+    # 发布：act_interfaces/msg/MotionFeedback，携带 request_id 和阶段反馈。
     feedback_topic: /arm_goal/feedback
-    # 发布：eng_interfaces/msg/MotionResult，携带 request_id、结果和轨迹。
+    # 发布：act_interfaces/msg/MotionResult，携带 request_id、结果和轨迹。
     result_topic: /arm_goal/result
     # Action 客户端 → arm_planning；CLI 与 Topic 输入都使用这个服务端。
     planning_action: /arm_planning/plan_motion

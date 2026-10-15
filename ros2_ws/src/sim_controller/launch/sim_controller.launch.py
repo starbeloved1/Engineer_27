@@ -13,6 +13,8 @@ def generate_launch_description():
         FindExecutable(name='xacro'), ' ', share + '/config/arm.ros2_control.xacro']), value_type=str)}
     return LaunchDescription([
         DeclareLaunchArgument('controller_config', default_value=share + '/config/ros2_controllers.yaml'),
+        Node(package='tf2_ros', executable='static_transform_publisher', name='world_to_base',
+             arguments=['--frame-id', 'world', '--child-frame-id', 'base_link']),
         Node(package='robot_state_publisher', executable='robot_state_publisher', parameters=[description], output='screen'),
         Node(package='controller_manager', executable='ros2_control_node',
              parameters=[description, LaunchConfiguration('controller_config')], output='screen'),

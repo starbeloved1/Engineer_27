@@ -41,7 +41,7 @@ Json::Value array(const Values& values)
   return out;
 }
 
-Json::Value resultJson(const eng_interfaces::action::PlanMotion::Result& result)
+Json::Value resultJson(const act_interfaces::action::PlanMotion::Result& result)
 {
   Json::Value out;
   out["success"] = result.success;
@@ -139,8 +139,7 @@ int GoalClientNode::submit(const GoalOptions& options,
     return 130;
   if (!client_->action_server_is_ready())
     throw std::runtime_error(
-        "Planning server unavailable; start "
-        "eng_bringup offline.launch.py");
+        "Planning server unavailable; run ./run.sh in the Engineer_27 directory");
   if (!discovery_settled_)
   {
     // 本机 Fast DDS 可先发现服务，再匹配响应 reader；不重发运动目标，先等待匹配稳定。

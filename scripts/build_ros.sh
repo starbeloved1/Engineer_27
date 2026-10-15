@@ -10,5 +10,5 @@ export CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-2}"
   --base-paths "$engineer_root/ros2_ws/src" \
   --build-base "$engineer_root/.cache/ros2/build" \
   --install-base "$engineer_root/.cache/ros2/install" \
-  --packages-up-to eng_bringup --symlink-install \
+  --symlink-install \
   --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3 "$@"

@@ -19,8 +19,8 @@ void GoalClientNode::configureTopics()
   };
   // 命令不持久化，避免重新启动后执行历史目标。回调和 Action 由同一执行器串行处理。
   const auto qos = rclcpp::QoS(10).reliable().durability_volatile();
-  feedback_publisher_ = create_publisher<eng_interfaces::msg::MotionFeedback>(topic("feedback_topic"), qos);
-  result_publisher_ = create_publisher<eng_interfaces::msg::MotionResult>(topic("result_topic"), qos);
+  feedback_publisher_ = create_publisher<act_interfaces::msg::MotionFeedback>(topic("feedback_topic"), qos);
+  result_publisher_ = create_publisher<act_interfaces::msg::MotionResult>(topic("result_topic"), qos);
   target_subscription_ = create_subscription<Target>(
       topic("target_topic"), qos, [this](Target::ConstSharedPtr message) { receiveTarget(*message); });
   cancel_subscription_ = create_subscription<std_msgs::msg::String>(
@@ -65,7 +65,7 @@ void GoalClientNode::receiveTarget(const Target& message)
 void GoalClientNode::publishFeedback(const std::string& id, const std::string& stage,
                                       const std::string& detail)
 {
-  eng_interfaces::msg::MotionFeedback out;
+  act_interfaces::msg::MotionFeedback out;
   out.request_id = id;
   out.stage = stage;
   out.detail = detail;
@@ -74,7 +74,7 @@ void GoalClientNode::publishFeedback(const std::string& id, const std::string& s
 
 void GoalClientNode::publishResult(const std::string& id, const Action::Result& result)
 {
-  eng_interfaces::msg::MotionResult out;
+  act_interfaces::msg::MotionResult out;
   out.request_id = id;
   out.success = result.success;
   out.error_code = result.error_code;

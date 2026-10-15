@@ -1,6 +1,6 @@
 arm_plan_goal:
   ros__parameters:
-    # 输出：eng_interfaces/action/PlanMotion，必须匹配服务端地址
+    # 输出：act_interfaces/action/PlanMotion，必须匹配服务端地址
     planning_action: /arm_planning/plan_motion
     # 等待服务端发现、目标接收、完整请求结果的时间，单位 s
     # 首次发现后等待响应通道匹配，本机 Fast DDS 的短时客户端需要；单位 s，0 可禁用。

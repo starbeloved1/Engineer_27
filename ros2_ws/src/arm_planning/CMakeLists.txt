@@ -7,7 +7,7 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
-find_package(eng_interfaces REQUIRED)
+find_package(act_interfaces REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(moveit_core REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
@@ -18,11 +18,11 @@ add_library(planning_math src/planning_math.cpp)
 add_library(node_config src/config_arguments.cpp)
 ament_target_dependencies(node_config ament_index_cpp)
 add_library(planning_runtime src/motion_planner.cpp src/arm_planning_node.cpp)
-ament_target_dependencies(planning_runtime rclcpp rclcpp_action eng_interfaces moveit_msgs
+ament_target_dependencies(planning_runtime rclcpp rclcpp_action act_interfaces moveit_msgs
   moveit_core moveit_ros_planning_interface)
 target_link_libraries(planning_runtime planning_math)
 add_executable(arm_planning_node src/main.cpp)
-ament_target_dependencies(arm_planning_node rclcpp rclcpp_action eng_interfaces
+ament_target_dependencies(arm_planning_node rclcpp rclcpp_action act_interfaces
   moveit_core moveit_ros_planning_interface)
 target_link_libraries(arm_planning_node planning_runtime node_config)
 install(TARGETS arm_planning_node DESTINATION lib/${PROJECT_NAME})

@@ -12,8 +12,8 @@ import uuid
 
 from ament_index_python.packages import get_package_prefix
 import rclpy
-from eng_interfaces.msg import MotionTarget, MotionFeedback, MotionResult
-from eng_interfaces.action import PlanMotion
+from act_interfaces.msg import MotionTarget, MotionFeedback, MotionResult
+from act_interfaces.action import PlanMotion
 from moveit_msgs.msg import MoveItErrorCodes as Codes
 from sensor_msgs.msg import JointState
 from std_msgs.msg import String

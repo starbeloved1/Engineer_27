@@ -6,22 +6,22 @@
 
 | 包 | 职责 | 运行节点或组件 |
 | --- | --- | --- |
-| `eng_interfaces` | 公共 `PlanMotion.action` 和 Topic 目标、反馈、结果消息 | 不运行节点 |
+| `act_interfaces` | 公共 `PlanMotion.action` 和 Topic 目标、反馈、结果消息 | 不运行节点 |
 | `arm_goal` | C++ 命令行和 Topic 目标输入，统一转发到规划 Action | 临时 `/arm_plan_goal` 或常驻 `/arm_goal` |
 | `arm_planning` | C++ 规划服务、IK 筛选、路径复查和规划计算 | `/arm_planning` |
 | `moveit_config` | 纯机器人模型、SRDF、KDL、OMPL、MoveIt 执行端映射 | launch 启动 `/move_group` |
-| `sim_controller` | 模拟硬件 Xacro、ros2_control 配置、控制器和关节状态发布 | `/controller_manager`、`arm_controller`、`joint_state_broadcaster`、`robot_state_publisher` |
-| `eng_bringup` | 组合各功能包 launch，维护 world→base_link 和 RViz 显示 | 启动组合，不另建业务节点 |
+| `sim_controller` | 模拟硬件 Xacro、ros2_control 配置、控制器、关节状态和 TF | `/controller_manager`、`arm_controller`、`joint_state_broadcaster`、`robot_state_publisher`、`world_to_base` |
+| `arm_visualization` | 默认 RViz 显示与可选 MoveIt 原生调试窗口 | 默认 `/rviz2`，可选 `/rviz_native` |
 
-每个功能包都有自己的 launch，加载所属 YAML；`eng_bringup/launch/offline.launch.py` 使用 IncludeLaunchDescription 组合它们。根目录 `run.sh` 加载本工作区环境并进入同一总启动，不维护第二套节点列表。
+每个功能包都有自己的 launch，加载所属 YAML；根目录 `run.sh` 直接在后台启动各包 launch、记录 PID，并在 Ctrl+C 或任一被监控的 launch 进程退出时统一停止系统。启动列表只维护在 run.sh，没有总 launch 包。`arm_visualization` 只管理显示，不启动规划、控制器或坐标变换。
 
 ```text
-run.sh → eng_bringup/offline.launch.py
-  ├── sim_controller/sim_controller.launch.py  模拟硬件、控制器和状态发布
+run.sh
+  ├── sim_controller/sim_controller.launch.py  模拟硬件、控制器、关节状态和 TF
   ├── moveit_config/moveit.launch.py           MoveIt 服务
   ├── arm_planning/arm_planning.launch.py      自研 Action 服务端
   ├── arm_goal/arm_goal.launch.py              常驻 Topic→Action 客户端
-  └── eng_bringup/rviz.launch.py               只显示的 RViz
+  └── arm_visualization/rviz.launch.py         只显示的 RViz
 ```
 
 `assets/arm.urdf` 与 `assets/meshes/{visual,collision}` 是模型的唯一来源。构建时配置包生成安装用 URDF，仅将网格相对路径改为 `package://moveit_config/...`；不修改源 URDF，不安装 `assets/source` 归档。没有独立 description 包。
@@ -41,19 +41,21 @@ source .cache/ros2/install/setup.bash
 
 构建脚本只加载系统 ROS 并使用全新的 `.cache/ros2/{build,install,log}` 目录；以后继续使用这一目录。仓库中已跟踪的历史 `ros2_ws/build`、`install`、`log` 本次不清理，也不作为运行环境。
 
-直接使用 ROS 命令的等价入口是 `ros2 launch eng_bringup offline.launch.py`。客户端已迁到 `arm_goal`，命令改为 `ros2 run arm_goal plan_goal`。规划 Action 仍为 `/arm_planning/plan_motion`，类型仍为 `eng_interfaces/action/PlanMotion`，字段未改。
+总启动统一使用 `./run.sh`。接口包已改为 `act_interfaces`，Action 类型是 `act_interfaces/action/PlanMotion`，Topic 消息也使用此前缀；字段和 Action 地址 `/arm_planning/plan_motion` 保持不变。外部客户端需按新类型重新构建。
 
 默认 RViz **只显示**当前模型、规划轨迹和场景，没有原生 Plan / Execute 按钮。`Current Robot` 来自当前关节反馈的 TF，橙色 `Validated Trajectory` 是复查后的预览；预览不改变当前关节状态。无需窗口时：
 
 ```bash
-ros2 launch eng_bringup offline.launch.py use_rviz:=false
+./run.sh use_rviz:=false
 ```
 
-附加默认显示窗口使用 `ros2 launch eng_bringup rviz.launch.py`。单独调试 MoveIt 原生功能时，使用 `ros2 launch eng_bringup native_rviz.launch.py`；这个窗口直接访问 MoveIt，**不经过自研节点的 IK 候选选择及轨迹复查**，不作为默认业务入口。两种附加窗口均不会重复启动规划服务或控制器。
+附加默认显示窗口使用 `ros2 launch arm_visualization rviz.launch.py`。单独调试 MoveIt 原生功能时，使用 `ros2 launch arm_visualization native_rviz.launch.py`；这个窗口直接访问 MoveIt，**不经过自研节点的 IK 候选选择及轨迹复查**，不作为默认业务入口。两种附加窗口均不会重复启动规划服务或控制器。
 
-本机 Humble 的独立显示插件曾在 RViz 退出时触发共享 ROS node 析构崩溃。`eng_bringup/eng_bringup/launch_support.py` 统一为 RViz 预加载相关插件，使库在节点清理期间保持加载；只作用于 RViz 进程，不修改系统库或规划节点。
+本机 Humble 的独立显示插件曾在 RViz 退出时触发共享 ROS node 析构崩溃。`arm_visualization/arm_visualization/launch_support.py` 统一为 RViz 预加载相关插件，使库在节点清理期间保持加载；只作用于 RViz 进程，不修改系统库或规划节点。
 
 本机 Humble 的 move_group 也曾在退出插件卸载阶段触发 CallbackGroup 析构崩溃。`moveit_config/moveit_config/configuration.py` 为 move_group 进程预加载默认能力和控制器管理插件，保持它们加载到进程退出；此兼容配置不修改系统库。
+
+`./run.sh --help` 查看选项。保留 `use_rviz:=false`、`start_planner:=false`、`start_goal:=false` 开关，以及 `controller_config:=FILE`、`planner_config:=FILE`、`goal_config:=FILE` 参数文件覆盖。参数路径中有空格时对整个参数加引号。总脚本不覆盖各功能包的默认业务参数。
 
 ## 提交目标：C++ 命令行客户端
 
@@ -92,10 +94,10 @@ ros2 run arm_goal plan_goal --pose 0.0534446 0.00930325 0.19012849 -0.00996671 0
 
 | Topic（默认） | 类型 | 方向与含义 |
 | --- | --- | --- |
-| `/arm_goal/target` | `eng_interfaces/msg/MotionTarget` | 输入；request_id 和完整规划目标 |
+| `/arm_goal/target` | `act_interfaces/msg/MotionTarget` | 输入；request_id 和完整规划目标 |
 | `/arm_goal/cancel` | `std_msgs/msg/String` | 输入；data 是要取消的当前 request_id |
-| `/arm_goal/feedback` | `eng_interfaces/msg/MotionFeedback` | 输出；request_id、stage、detail |
-| `/arm_goal/result` | `eng_interfaces/msg/MotionResult` | 输出；request_id 和完整 Action 结果，包括轨迹 |
+| `/arm_goal/feedback` | `act_interfaces/msg/MotionFeedback` | 输出；request_id、stage、detail |
+| `/arm_goal/result` | `act_interfaces/msg/MotionResult` | 输出；request_id 和完整 Action 结果，包括轨迹 |
 
 `MotionTarget` 支持 JOINT=0、POSE=1；其余目标字段与 PlanMotion Goal 对应，单位、坐标系和默认值相同。`request_id` 必须非空，每次新任务使用不同编号。`execute` 默认 false，设 true 时请求模拟执行。反馈中的 `accepted` 只表示 Topic 客户端接收了目标，服务端仍可能拒绝。
 
@@ -112,14 +114,14 @@ ros2 topic echo /arm_goal/result --field message
 发送一次关节目标：
 
 ```bash
-ros2 topic pub --once /arm_goal/target eng_interfaces/msg/MotionTarget \
+ros2 topic pub --once /arm_goal/target act_interfaces/msg/MotionTarget \
   "{request_id: joint_demo_1, target_type: 0, joint_positions: [0.25, 0.0, 0.0, 0.0, 0.0, 0.0], execute: false}"
 ```
 
 发送一次末端位姿目标：
 
 ```bash
-ros2 topic pub --once /arm_goal/target eng_interfaces/msg/MotionTarget \
+ros2 topic pub --once /arm_goal/target act_interfaces/msg/MotionTarget \
   "{request_id: pose_demo_1, target_type: 1, target_pose: {header: {frame_id: base_link}, pose: {position: {x: 0.0534446, y: 0.00930325, z: 0.19012849}, orientation: {x: -0.00996671, y: 0.09933467, z: 0.09933467, w: 0.99003329}}}, execute: false}"
 ```
 
@@ -152,8 +154,8 @@ ros2 topic pub --once /arm_goal/cancel std_msgs/msg/String "{data: joint_demo_1}
 | `moveit_config/config/joint_limits.yaml` | MoveIt 时间参数化 | 离线速度与加速度上限 |
 | `moveit_config/config/moveit_controllers.yaml` | MoveIt 执行管理器 | 轨迹控制器名称与 Action 映射 |
 | `sim_controller/config/ros2_controllers.yaml` | `/controller_manager` 及控制器 | 模拟控制器类型、关节顺序、接口与更新频率 |
-| `eng_bringup/config/display.rviz` | 默认 RViz | 仅状态、轨迹、场景显示 |
-| `eng_bringup/config/native_moveit.rviz` | 可选原生 RViz | 直接调用 MoveIt 的调试面板 |
+| `arm_visualization/config/display.rviz` | 默认 RViz | 仅状态、轨迹、场景显示 |
+| `arm_visualization/config/native_moveit.rviz` | 可选原生 RViz | 直接调用 MoveIt 的调试面板 |
 
 规划服务端、CLI 客户端和常驻 Topic 客户端均自动加载各自已安装的默认 YAML，后传入的 ROS 参数可覆盖默认值。客户端的 `--timeout` 另外覆盖结果等待时间。`discovery_settle_time` 默认 0.5 s：首次发现 Action 服务端后留出响应通道匹配时间，缓解本机 Fast DDS 短时客户端的接收响应超时；0 可禁用，它不计入结果等待时限。业务参数在启动时读取，修改文件后需重启对应进程。
 
@@ -168,11 +170,13 @@ arm_planning:
 ```
 
 ```bash
-ros2 launch eng_bringup offline.launch.py planner_config:=/tmp/planner_override.yaml
+./run.sh planner_config:=/tmp/planner_override.yaml
 ros2 run arm_goal plan_goal --joints 0.25 0 0 0 0 0 --ros-args -p planning_action:=/experiment/plan_motion
 ```
 
 默认显示订阅 `/arm_planning/display_planned_path`，只接收自研节点复查后发布的轨迹。MoveIt 的 `/display_planned_path` 留给原生调试面板。如果改变 `display_topic`，也要在 RViz 的 Validated Trajectory 显示项同步修改订阅话题。MoveIt 标准 Action、关节反馈、TF 等保持其标准名称，需要改名时使用原生配置或 ROS remapping。
+
+完整的包—节点—接口清单、任务流、执行反馈流见 [通信说明](docs/communication.md)。下面是主要接口速查。
 
 ## 节点与通信地图
 
@@ -189,12 +193,12 @@ arm_plan_goal（C++ 临时 CLI 客户端）或 arm_goal（C++ 常驻 Topic 客�
 
 joint_state_broadcaster → /joint_states → move_group、arm_planning、robot_state_publisher
 robot_state_publisher → /tf → RViz 等 TF 消费方
-静态变换节点 → /tf_static：world 与 base_link 重合
+sim_controller 启动的 world_to_base → /tf_static：world 与 base_link 重合
 ```
 
 | 节点／组件 | 接口名（默认） | 类型 | 数据方向 |
 | --- | --- | --- | --- |
-| `arm_plan_goal` / `arm_goal` ↔ `arm_planning` | `/arm_planning/plan_motion` | Action：`eng_interfaces/action/PlanMotion` | 目标向服务端；反馈与结果回客户端 |
+| `arm_plan_goal` / `arm_goal` ↔ `arm_planning` | `/arm_planning/plan_motion` | Action：`act_interfaces/action/PlanMotion` | 目标向服务端；反馈与结果回客户端 |
 | `arm_planning` ↔ `move_group` | `/get_planning_scene` | Service：`moveit_msgs/srv/GetPlanningScene` | 请求读取最新场景 |
 | `arm_planning` ↔ `move_group` | `/move_action` | Action：`moveit_msgs/action/MoveGroup` | 请求路径规划，返回轨迹 |
 | `arm_planning` ↔ `move_group` | `/execute_trajectory` | Action：`moveit_msgs/action/ExecuteTrajectory` | 请求执行已校验轨迹 |
@@ -222,13 +226,13 @@ ros2 topic echo /joint_states --once
 
 ## 推荐的代码阅读顺序
 
-1. `eng_interfaces/action/PlanMotion.action`：先明确输入、输出和阶段反馈
+1. `act_interfaces/action/PlanMotion.action`：先明确输入、输出和阶段反馈
 2. `arm_planning/config/arm_planning.yaml` 和 `arm_goal/config/*.yaml`：明确参数归属和通信地址
 3. `arm_planning/src/main.cpp`、`arm_planning_node.cpp` 及对应头文件：节点初始化、接收目标、反馈、取消、单任务调度
 4. `arm_planning/src/motion_planner.cpp`：从 `plan()` 看场景、IK、目标检查、MoveIt 调用、复查和执行；此层依赖 ROS/MoveIt
 5. `arm_planning/src/planning_math.cpp`：角度跨圈、候选评分、插值细分，独立于 ROS/MoveIt
 6. `arm_goal/src/plan_goal_main.cpp`、`goal_options.cpp`、`goal_client_node.cpp`、`topic_input.cpp`：CLI/Topic 输入与共用的 Action 提交逻辑
-7. `eng_bringup/launch/offline.launch.py`：把配置和各节点组装起来
+7. 根目录 `run.sh` 和各包 `launch/`：把节点启动、各自的 YAML 和进程生命周期对应起来
 
 ## 当前算法边界
 
@@ -256,7 +260,7 @@ colcon test-result --test-result-base .cache/ros2/build --verbose
 
 ```bash
 # 终端一：加载当前工作区
-ROS_DOMAIN_ID=187 ros2 launch eng_bringup offline.launch.py use_rviz:=false
+ROS_DOMAIN_ID=187 ./run.sh use_rviz:=false
 
 # 终端二：加载当前工作区，从 Engineer_27 目录运行
 ROS_DOMAIN_ID=187 /usr/bin/python3 ros2_ws/src/arm_planning/test/offline_integration.py
@@ -279,3 +283,11 @@ ROS_DOMAIN_ID=187 /usr/bin/python3 ros2_ws/src/arm_goal/test/topic_integration.p
 ```
 
 覆盖关节/位姿目标、反馈和完整结果、只规划时状态不变、碰撞与非法输入、模拟执行、忙时拒绝、活动目标去重、取消编号匹配、自定义 Topic/YAML、服务端不可用和超时取消。多组运动测试不要并行运行。
+
+总脚本的进程生命周期测试（单独使用一个 ROS 域，不需要预先启动系统）：
+
+```bash
+ROS_DOMAIN_ID=195 /usr/bin/python3 scripts/test_run_supervision.py
+```
+
+验证 Ctrl+C 后清理所属 launch 和节点、一个 launch 退出后停止其余进程，以及非法参数不启动系统。后台启动前恢复 SIGINT 默认处理；正常退出超时后只向本脚本拥有的独立进程组发送 SIGTERM/SIGKILL。

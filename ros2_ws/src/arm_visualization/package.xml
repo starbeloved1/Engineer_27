@@ -1,14 +1,13 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>eng_bringup</name><version>0.1.0</version>
-  <description>离线系统启动组合、根坐标系与可视化</description>
+  <name>arm_visualization</name><version>0.1.0</version>
+  <description>机械臂 RViz 显示配置和可选 MoveIt 原生调试窗口</description>
   <maintainer email="engineer27@example.com">Engineer 27 Team</maintainer><license>TODO</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
-  <exec_depend>arm_planning</exec_depend><exec_depend>arm_goal</exec_depend><exec_depend>sim_controller</exec_depend><exec_depend>moveit_config</exec_depend>
+  <exec_depend>moveit_config</exec_depend>
   <exec_depend>launch</exec_depend><exec_depend>launch_ros</exec_depend>
-  <exec_depend>ament_index_python</exec_depend>
-  <exec_depend>tf2_ros</exec_depend><exec_depend>rviz2</exec_depend>
+  <exec_depend>ament_index_python</exec_depend><exec_depend>rviz2</exec_depend>
   <exec_depend>moveit_ros_visualization</exec_depend>
   <export><build_type>ament_cmake</build_type></export>
 </package>

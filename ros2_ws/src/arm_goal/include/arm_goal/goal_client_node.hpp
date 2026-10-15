@@ -1,9 +1,9 @@
 #pragma once
 
-#include <eng_interfaces/action/plan_motion.hpp>
-#include <eng_interfaces/msg/motion_target.hpp>
-#include <eng_interfaces/msg/motion_feedback.hpp>
-#include <eng_interfaces/msg/motion_result.hpp>
+#include <act_interfaces/action/plan_motion.hpp>
+#include <act_interfaces/msg/motion_target.hpp>
+#include <act_interfaces/msg/motion_feedback.hpp>
+#include <act_interfaces/msg/motion_result.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <functional>
 #include <optional>
@@ -16,7 +16,7 @@ namespace arm_goal
 {
 struct GoalOptions
 {
-  eng_interfaces::action::PlanMotion::Goal goal;
+  act_interfaces::action::PlanMotion::Goal goal;
   std::string output;
   double timeout{0};
   bool help{false};
@@ -35,9 +35,9 @@ class GoalClientNode : public rclcpp::Node
   int listen(const std::function<bool()>& interrupted);
 
  private:
-  using Action = eng_interfaces::action::PlanMotion;
+  using Action = act_interfaces::action::PlanMotion;
   using Handle = rclcpp_action::ClientGoalHandle<Action>;
-  using Target = eng_interfaces::msg::MotionTarget;
+  using Target = act_interfaces::msg::MotionTarget;
   void cancel(rclcpp::executors::SingleThreadedExecutor& executor, const Handle::SharedPtr& handle);
   int submit(const GoalOptions& options, rclcpp::executors::SingleThreadedExecutor& executor,
              const std::function<bool()>& interrupted);
@@ -57,7 +57,7 @@ class GoalClientNode : public rclcpp::Node
   std::optional<Target> pending_;
   rclcpp::Subscription<Target>::SharedPtr target_subscription_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr cancel_subscription_;
-  rclcpp::Publisher<eng_interfaces::msg::MotionFeedback>::SharedPtr feedback_publisher_;
-  rclcpp::Publisher<eng_interfaces::msg::MotionResult>::SharedPtr result_publisher_;
+  rclcpp::Publisher<act_interfaces::msg::MotionFeedback>::SharedPtr feedback_publisher_;
+  rclcpp::Publisher<act_interfaces::msg::MotionResult>::SharedPtr result_publisher_;
 };
 }  // namespace arm_goal

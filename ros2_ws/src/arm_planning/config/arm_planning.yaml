@@ -1,6 +1,6 @@
 arm_planning:
   ros__parameters:
-    # 输入：eng_interfaces/action/PlanMotion，目标客户端为调用方
+    # 输入：act_interfaces/action/PlanMotion，目标客户端为调用方
     planning_action: /arm_planning/plan_motion
     # 请求 MoveIt 获取完整规划场景：moveit_msgs/srv/GetPlanningScene
     scene_service: /get_planning_scene
