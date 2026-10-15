@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "arm_planning__rs",
+		"source" : "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/arm_planning__rs"
+	}
+}

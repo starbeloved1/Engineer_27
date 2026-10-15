@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="urdf">
+  <xacro:include filename="$(find engineer27_description)/urdf/arm.urdf"/>
+  <xacro:macro name="mock_joint" params="name">
+    <joint name="${name}">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </xacro:macro>
+  <ros2_control name="Engineer27MockSystem" type="system">
+    <hardware><plugin>mock_components/GenericSystem</plugin></hardware>
+    <xacro:mock_joint name="link_1_joint"/>
+    <xacro:mock_joint name="link_2_joint"/>
+    <xacro:mock_joint name="link_3_joint"/>
+    <xacro:mock_joint name="link_4_joint"/>
+    <xacro:mock_joint name="link_5_joint"/>
+    <xacro:mock_joint name="link_6_joint"/>
+  </ros2_control>
+</robot>

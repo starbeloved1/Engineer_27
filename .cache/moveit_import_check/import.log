@@ -1,7 +1,0 @@
-[INFO] [1791985587.437170058] [engineer27_import_check.urdf]: Loaded urdf robot model.
-[INFO] [1791985587.437260067] [moveit_robot_model.robot_model]: Loading robot model 'urdf'...
-[INFO] [1791985587.437265688] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
-description package: engineer27_description
-links: 7
-variables: 6
-collision shapes: 7

@@ -1,0 +1,38 @@
+[0.004s] Invoking command in '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description -- -j32 -l32
+[0.021s] Invoked command in '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description -- -j32 -l32
+[0.025s] Invoking command in '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description
+[0.028s] -- Install configuration: ""
+[0.028s] -- Execute custom install script
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/urdf/arm.urdf
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/ament_index/resource_index/package_run_dependencies/engineer27_description
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/ament_index/resource_index/parent_prefix_path/engineer27_description
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/environment/ament_prefix_path.sh
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/environment/ament_prefix_path.dsv
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/environment/path.sh
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/environment/path.dsv
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/local_setup.bash
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/local_setup.sh
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/local_setup.zsh
+[0.029s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/local_setup.dsv
+[0.029s] -- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/package.dsv
+[0.033s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/ament_index/resource_index/packages/engineer27_description
+[0.033s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/cmake/engineer27_descriptionConfig.cmake
+[0.033s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/cmake/engineer27_descriptionConfig-version.cmake
+[0.033s] -- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/package.xml
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/visual
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/visual/link_3.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/visual/link_5.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/visual/link_6.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/visual/link_1.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/visual/link_4.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/visual/base_link.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/visual/link_2.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/collision
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/collision/link_3.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/collision/link_5.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/collision/link_6.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/collision/link_1.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/collision/link_4.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/collision/base_link.stl
+[0.033s] -- Up-to-date: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/engineer27_description/share/engineer27_description/meshes/collision/link_2.stl
+[0.034s] Invoked command in '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description

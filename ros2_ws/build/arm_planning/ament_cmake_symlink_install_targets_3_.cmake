@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/arm_planning_node" "TARGETS" "arm_planning_node" "DESTINATION" "lib/arm_planning")

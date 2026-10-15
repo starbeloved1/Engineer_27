@@ -1,7 +1,0 @@
-{
-  "time_to_first_model_seconds": 10.627195140999902,
-  "software_opengl": true,
-  "red_model_pixels": 32984,
-  "checked_poses": 8,
-  "max_tf_matrix_error": 5.551115123125783e-17
-}

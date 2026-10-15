@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<robot name="urdf">
+  <virtual_joint name="world_joint" type="fixed" parent_frame="world" child_link="base_link"/>
+  <group name="arm_control"><chain base_link="base_link" tip_link="link_6"/></group>
+  <group_state name="home" group="arm_control">
+    <joint name="link_1_joint" value="0"/><joint name="link_2_joint" value="0"/>
+    <joint name="link_3_joint" value="0"/><joint name="link_4_joint" value="0"/>
+    <joint name="link_5_joint" value="0"/><joint name="link_6_joint" value="0"/>
+  </group_state>
+  <!-- Only directly connected links are excluded for the current joint mount geometry.
+       No sampled Never/User exclusions. Recheck after mechanical/model updates. -->
+  <disable_collisions link1="base_link" link2="link_1" reason="Adjacent"/>
+  <disable_collisions link1="link_1" link2="link_2" reason="Adjacent"/>
+  <disable_collisions link1="link_2" link2="link_3" reason="Adjacent"/>
+  <disable_collisions link1="link_3" link2="link_4" reason="Adjacent"/>
+  <disable_collisions link1="link_4" link2="link_5" reason="Adjacent"/>
+  <disable_collisions link1="link_5" link2="link_6" reason="Adjacent"/>
+</robot>

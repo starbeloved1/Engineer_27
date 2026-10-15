@@ -1,0 +1,1 @@
+/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_environment_hooks/local_setup.sh

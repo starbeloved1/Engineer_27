@@ -1,0 +1,18 @@
+planning_plugin: ompl_interface/OMPLPlanner
+# Reject bad start states in the application instead of silently moving them.
+request_adapters: >-
+  default_planner_request_adapters/AddTimeOptimalParameterization
+  default_planner_request_adapters/ResolveConstraintFrames
+  default_planner_request_adapters/FixWorkspaceBounds
+  default_planner_request_adapters/FixStartStateBounds
+start_state_max_bounds_error: 0.01
+maximum_waypoint_distance: 0.01
+planner_configs:
+  RRTConnectkConfigDefault:
+    type: geometric::RRTConnect
+    range: 0.0
+arm_control:
+  default_planner_config: RRTConnectkConfigDefault
+  planner_configs: [RRTConnectkConfigDefault]
+  projection_evaluator: joints(link_1_joint,link_2_joint)
+  longest_valid_segment_fraction: 0.002

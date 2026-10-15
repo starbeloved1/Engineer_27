@@ -1,0 +1,233 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found rosidl_default_generators: 1.2.1 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Found rosidl_adapter: 3.1.9 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rclcpp: 16.0.19 (/opt/ros/humble/share/rclcpp/cmake)
+-- Found rmw_implementation_cmake: 6.1.3 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+-- Found FastRTPS: /opt/ros/humble/include  
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Found rclcpp_action: 16.0.19 (/opt/ros/humble/share/rclcpp_action/cmake)
+-- Found geometry_msgs: 4.9.2 (/opt/ros/humble/share/geometry_msgs/cmake)
+-- Found moveit_msgs: 2.2.3 (/opt/ros/humble/share/moveit_msgs/cmake)
+-- Found moveit_core: 2.5.10 (/opt/ros/humble/share/moveit_core/cmake)
+-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: chrono date_time filesystem iostreams program_options regex serialization system thread 
+-- Found tcb_span: 1.3.2 (/opt/ros/humble/share/tcb_span/cmake)
+-- Found rclcpp_lifecycle: 16.0.19 (/opt/ros/humble/share/rclcpp_lifecycle/cmake)
+-- Found parameter_traits: 0.7.7 (/opt/ros/humble/share/parameter_traits/cmake)
+-- library: /usr/lib/x86_64-linux-gnu/libcurl.so
+-- Found Eigen3: TRUE (found version "3.4.0") 
+-- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+-- Found moveit_ros_planning_interface: 2.5.10 (/opt/ros/humble/share/moveit_ros_planning_interface/cmake)
+-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: date_time filesystem program_options system thread 
+-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: system filesystem date_time program_options thread chrono 
+-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: thread system filesystem regex date_time program_options 
+-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: system filesystem date_time program_options thread 
+-- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found PythonInterp: /usr/bin/python3 (found suitable version "3.10.12", minimum required is "3.6") 
+-- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+-- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython3.10.so (found suitable version "3.10.12", minimum required is "3.5") 
+-- Using PYTHON_EXECUTABLE: /usr/bin/python3
+-- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+-- Using PYTHON_LIBRARIES: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+-- Found PythonExtra: .so  
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning
+[  2%] Generating C code for ROS interfaces
+[  5%] Generating C++ code for ROS interfaces
+[  8%] Generating Rust code for ROS interfaces
+[  8%] Built target ament_cmake_python_symlink_arm_planning
+running egg_info
+creating arm_planning.egg-info
+writing arm_planning.egg-info/PKG-INFO
+writing dependency_links to arm_planning.egg-info/dependency_links.txt
+writing top-level names to arm_planning.egg-info/top_level.txt
+writing manifest file 'arm_planning.egg-info/SOURCES.txt'
+reading manifest file 'arm_planning.egg-info/SOURCES.txt'
+writing manifest file 'arm_planning.egg-info/SOURCES.txt'
+[  8%] Built target ament_cmake_python_build_arm_planning_egg
+[  8%] Built target arm_planning__rs
+[  8%] Built target arm_planning__cpp
+[ 17%] Building C object CMakeFiles/arm_planning__rosidl_generator_c.dir/rosidl_generator_c/arm_planning/action/detail/plan_motion__functions.c.o
+[ 17%] Generating C++ type support dispatch for ROS interfaces
+[ 20%] Generating C++ introspection for ROS interfaces
+[ 20%] Generating C++ type support for eProsima Fast-RTPS
+[ 23%] Linking C shared library libarm_planning__rosidl_generator_c.so
+[ 23%] Built target arm_planning__rosidl_generator_c
+[ 29%] Generating C introspection for ROS interfaces
+[ 29%] Generating C type support dispatch for ROS interfaces
+[ 32%] Generating C type support for eProsima Fast-RTPS
+[ 35%] Building CXX object CMakeFiles/arm_planning__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/arm_planning/action/plan_motion__type_support.cpp.o
+[ 38%] Building CXX object CMakeFiles/arm_planning__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/arm_planning/action/detail/plan_motion__type_support.cpp.o
+[ 41%] Building CXX object CMakeFiles/arm_planning__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/arm_planning/action/detail/dds_fastrtps/plan_motion__type_support.cpp.o
+[ 44%] Building CXX object CMakeFiles/arm_planning__rosidl_typesupport_c.dir/rosidl_typesupport_c/arm_planning/action/plan_motion__type_support.cpp.o
+[ 47%] Linking CXX shared library libarm_planning__rosidl_typesupport_c.so
+[ 50%] Building CXX object CMakeFiles/arm_planning__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/arm_planning/action/detail/plan_motion__type_support_c.cpp.o
+[ 52%] Building C object CMakeFiles/arm_planning__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/arm_planning/action/detail/plan_motion__type_support.c.o
+[ 52%] Built target arm_planning__rosidl_typesupport_c
+[ 55%] Linking C shared library libarm_planning__rosidl_typesupport_introspection_c.so
+[ 55%] Built target arm_planning__rosidl_typesupport_introspection_c
+[ 58%] Linking CXX shared library libarm_planning__rosidl_typesupport_cpp.so
+[ 58%] Built target arm_planning__rosidl_typesupport_cpp
+[ 61%] Building CXX object CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o
+[ 64%] Linking CXX shared library libarm_planning__rosidl_typesupport_fastrtps_cpp.so
+[ 67%] Linking CXX shared library libarm_planning__rosidl_typesupport_introspection_cpp.so
+[ 70%] Linking CXX shared library libarm_planning__rosidl_typesupport_fastrtps_c.so
+[ 70%] Built target arm_planning__rosidl_typesupport_fastrtps_cpp
+[ 70%] Built target arm_planning__rosidl_typesupport_introspection_cpp
+[ 70%] Built target arm_planning__rosidl_typesupport_fastrtps_c
+[ 70%] Built target arm_planning
+[ 73%] Generating Python code for ROS interfaces
+[ 73%] Built target arm_planning__py
+[ 76%] Building C object CMakeFiles/arm_planning__rosidl_generator_py.dir/rosidl_generator_py/arm_planning/action/_plan_motion_s.c.o
+[ 79%] Linking C shared library rosidl_generator_py/arm_planning/libarm_planning__rosidl_generator_py.so
+[ 79%] Built target arm_planning__rosidl_generator_py
+[ 85%] Building C object CMakeFiles/arm_planning__rosidl_typesupport_introspection_c__pyext.dir/rosidl_generator_py/arm_planning/_arm_planning_s.ep.rosidl_typesupport_introspection_c.c.o
+[ 85%] Building C object CMakeFiles/arm_planning__rosidl_typesupport_c__pyext.dir/rosidl_generator_py/arm_planning/_arm_planning_s.ep.rosidl_typesupport_c.c.o
+[ 88%] Building C object CMakeFiles/arm_planning__rosidl_typesupport_fastrtps_c__pyext.dir/rosidl_generator_py/arm_planning/_arm_planning_s.ep.rosidl_typesupport_fastrtps_c.c.o
+[ 97%] Linking C shared library rosidl_generator_py/arm_planning/arm_planning_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[ 97%] Linking C shared library rosidl_generator_py/arm_planning/arm_planning_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[ 97%] Linking C shared library rosidl_generator_py/arm_planning/arm_planning_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[ 97%] Built target arm_planning__rosidl_typesupport_c__pyext
+[ 97%] Built target arm_planning__rosidl_typesupport_fastrtps_c__pyext
+[ 97%] Built target arm_planning__rosidl_typesupport_introspection_c__pyext
+[100%] Linking CXX executable arm_planning_node
+[100%] Built target arm_planning_node
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/ament_index/resource_index/rosidl_interfaces/arm_planning
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__functions.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__struct.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__type_support.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/plan_motion.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/msg/rosidl_generator_c__visibility_control.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/environment/library_path.sh
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/environment/library_path.dsv
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__rosidl_typesupport_fastrtps_c.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__rosidl_typesupport_introspection_c.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/msg/rosidl_typesupport_introspection_c__visibility_control.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__builder.hpp
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__struct.hpp
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__traits.hpp
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__type_support.hpp
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/plan_motion.hpp
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/msg/rosidl_generator_cpp__visibility_control.hpp
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__rosidl_typesupport_fastrtps_cpp.hpp
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/include/arm_planning/arm_planning/action/detail/plan_motion__rosidl_typesupport_introspection_cpp.hpp
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/environment/pythonpath.sh
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/environment/pythonpath.dsv
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning-0.1.0-py3.10.egg-info/PKG-INFO
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning-0.1.0-py3.10.egg-info/SOURCES.txt
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning-0.1.0-py3.10.egg-info/dependency_links.txt
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning-0.1.0-py3.10.egg-info/top_level.txt
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/__init__.py
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/_arm_planning_s.ep.rosidl_typesupport_c.c
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/_arm_planning_s.ep.rosidl_typesupport_fastrtps_c.c
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/_arm_planning_s.ep.rosidl_typesupport_introspection_c.c
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/action/__init__.py
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/action/_plan_motion.py
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/action/_plan_motion_s.c
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/arm_planning_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/arm_planning_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/arm_planning_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/libarm_planning__rosidl_generator_py.so
+-- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/arm_planning_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+-- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/arm_planning_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+-- Up-to-date symlink: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/arm_planning_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/ament_index/resource_index/rust_packages/arm_planning
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/rust/Cargo.toml
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/rust/build.rs
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/rust/src/action.rs
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/rust/src/action/rmw.rs
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/rust/src/lib.rs
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/action/PlanMotion.idl
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/action/PlanMotion.action
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/arm_planning/arm_planning_node
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/ament_index/resource_index/package_run_dependencies/arm_planning
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/ament_index/resource_index/parent_prefix_path/arm_planning
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/environment/ament_prefix_path.sh
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/environment/ament_prefix_path.dsv
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/environment/path.sh
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/environment/path.dsv
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/local_setup.bash
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/local_setup.sh
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/local_setup.zsh
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/local_setup.dsv
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/package.dsv
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/ament_index/resource_index/packages/arm_planning
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/rosidl_cmake-extras.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/ament_cmake_export_libraries-extras.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/ament_cmake_export_targets-extras.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/rosidl_cmake_aggregate_target-extras.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planningConfig.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planningConfig-version.cmake
+-- Symlinking: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/package.xml
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_generator_c.so
+-- Set runtime path of "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_generator_c.so" to ""
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_fastrtps_c.so
+-- Set runtime path of "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_fastrtps_c.so" to ""
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_introspection_c.so
+-- Set runtime path of "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_introspection_c.so" to ""
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_c.so
+-- Set runtime path of "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_c.so" to ""
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_fastrtps_cpp.so
+-- Set runtime path of "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_fastrtps_cpp.so" to ""
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_introspection_cpp.so
+-- Set runtime path of "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_introspection_cpp.so" to ""
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_cpp.so
+-- Set runtime path of "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_typesupport_cpp.so" to ""
+Listing '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning'...
+Compiling '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/__init__.py'...
+Listing '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/action'...
+Compiling '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/action/__init__.py'...
+Compiling '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/local/lib/python3.10/dist-packages/arm_planning/action/_plan_motion.py'...
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_generator_py.so
+-- Set runtime path of "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/libarm_planning__rosidl_generator_py.so" to ""
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/lib/arm_planning/plan_goal
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_generator_cExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_generator_cExport-noconfig.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_typesupport_fastrtps_cExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planning__rosidl_typesupport_introspection_cExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planning__rosidl_typesupport_introspection_cExport-noconfig.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planning__rosidl_typesupport_cExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planning__rosidl_typesupport_cExport-noconfig.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_generator_cppExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_typesupport_fastrtps_cppExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planning__rosidl_typesupport_introspection_cppExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planning__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planning__rosidl_typesupport_cppExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/arm_planning__rosidl_typesupport_cppExport-noconfig.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_generator_pyExport.cmake
+-- Installing: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/arm_planning/share/arm_planning/cmake/export_arm_planning__rosidl_generator_pyExport-noconfig.cmake
