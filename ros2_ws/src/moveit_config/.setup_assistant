@@ -1,0 +1,9 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: moveit_config
+    relative_path: urdf/arm.urdf
+  srdf:
+    relative_path: config/arm.srdf
+  package_settings:
+    author_name: Engineer 27 Team
+    author_email: engineer27@example.com

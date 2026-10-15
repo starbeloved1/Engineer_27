@@ -1,0 +1,22 @@
+uint8 JOINT=0 # 直接给6个关节角
+uint8 POSE=1 # 给末端位置和对应pose
+uint8 target_type
+float64[6] joint_positions
+geometry_msgs/PoseStamped target_pose # 末端位姿
+bool execute # 置true时会模拟执行
+float64 velocity_scaling
+float64 acceleration_scaling
+float64 planning_time
+---
+bool success
+int32 error_code
+string message
+moveit_msgs/RobotTrajectory trajectory
+float64[6] selected_joint_positions
+float64 planning_time
+float64 joint_path_length
+uint32 validation_samples
+uint32 ik_candidates
+---
+string stage
+string detail

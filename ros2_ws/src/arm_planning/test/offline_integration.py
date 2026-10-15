@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Run against demo.launch.py in an isolated ROS_DOMAIN_ID using mock hardware."""
+"""Run against eng_bringup offline.launch.py in an isolated ROS_DOMAIN_ID using mock hardware."""
 import json
 import math
 from pathlib import Path
@@ -9,7 +9,7 @@ import unittest
 import rclpy
 from rclpy.action import ActionClient
 from action_msgs.msg import GoalStatus
-from arm_planning.action import PlanMotion
+from eng_interfaces.action import PlanMotion
 from moveit_msgs.msg import CollisionObject, PlanningScene, PlanningSceneComponents, RobotState
 from moveit_msgs.srv import ApplyPlanningScene, GetPlanningScene, GetPositionFK, GetStateValidity
 from shape_msgs.msg import SolidPrimitive

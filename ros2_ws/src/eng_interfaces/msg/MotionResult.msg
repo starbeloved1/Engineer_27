@@ -1,0 +1,10 @@
+string request_id
+bool success
+int32 error_code
+string message
+moveit_msgs/RobotTrajectory trajectory
+float64[6] selected_joint_positions
+float64 planning_time
+float64 joint_path_length
+uint32 validation_samples
+uint32 ik_candidates
