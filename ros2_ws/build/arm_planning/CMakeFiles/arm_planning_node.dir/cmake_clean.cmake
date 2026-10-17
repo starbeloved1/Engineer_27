@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o"
-  "CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o.d"
+  "CMakeFiles/arm_planning_node.dir/src/main.cpp.o"
+  "CMakeFiles/arm_planning_node.dir/src/main.cpp.o.d"
   "arm_planning_node"
   "arm_planning_node.pdb"
 )

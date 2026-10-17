@@ -69,31 +69,40 @@ include CMakeFiles/arm_planning_node.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/arm_planning_node.dir/flags.make
 
-CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o: CMakeFiles/arm_planning_node.dir/flags.make
-CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/arm_planning_node.cpp
-CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o: CMakeFiles/arm_planning_node.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o -MF CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o.d -o CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o -c /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/arm_planning_node.cpp
+CMakeFiles/arm_planning_node.dir/src/main.cpp.o: CMakeFiles/arm_planning_node.dir/flags.make
+CMakeFiles/arm_planning_node.dir/src/main.cpp.o: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/main.cpp
+CMakeFiles/arm_planning_node.dir/src/main.cpp.o: CMakeFiles/arm_planning_node.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/arm_planning_node.dir/src/main.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/arm_planning_node.dir/src/main.cpp.o -MF CMakeFiles/arm_planning_node.dir/src/main.cpp.o.d -o CMakeFiles/arm_planning_node.dir/src/main.cpp.o -c /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/main.cpp
 
-CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/arm_planning_node.cpp > CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.i
+CMakeFiles/arm_planning_node.dir/src/main.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/arm_planning_node.dir/src/main.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/main.cpp > CMakeFiles/arm_planning_node.dir/src/main.cpp.i
 
-CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/arm_planning_node.cpp -o CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.s
+CMakeFiles/arm_planning_node.dir/src/main.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/arm_planning_node.dir/src/main.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/main.cpp -o CMakeFiles/arm_planning_node.dir/src/main.cpp.s
 
 # Object files for target arm_planning_node
 arm_planning_node_OBJECTS = \
-"CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o"
+"CMakeFiles/arm_planning_node.dir/src/main.cpp.o"
 
 # External object files for target arm_planning_node
 arm_planning_node_EXTERNAL_OBJECTS =
 
-arm_planning_node: CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o
+arm_planning_node: CMakeFiles/arm_planning_node.dir/src/main.cpp.o
 arm_planning_node: CMakeFiles/arm_planning_node.dir/build.make
+arm_planning_node: libplanning_runtime.a
+arm_planning_node: libnode_config.a
+arm_planning_node: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/act_interfaces/lib/libact_interfaces__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/act_interfaces/lib/libact_interfaces__rosidl_typesupport_introspection_c.so
+arm_planning_node: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/act_interfaces/lib/libact_interfaces__rosidl_typesupport_fastrtps_cpp.so
+arm_planning_node: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/act_interfaces/lib/libact_interfaces__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/act_interfaces/lib/libact_interfaces__rosidl_typesupport_cpp.so
+arm_planning_node: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/act_interfaces/lib/libact_interfaces__rosidl_generator_py.so
+arm_planning_node: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/act_interfaces/lib/libact_interfaces__rosidl_typesupport_c.so
+arm_planning_node: /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/install/act_interfaces/lib/libact_interfaces__rosidl_generator_c.so
 arm_planning_node: /opt/ros/humble/lib/libmoveit_move_group_interface.so.2.5.10
-arm_planning_node: libarm_planning__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libmoveit_common_planning_interface_objects.so.2.5.10
 arm_planning_node: /opt/ros/humble/lib/libmoveit_planning_scene_interface.so.2.5.10
 arm_planning_node: /opt/ros/humble/lib/libmoveit_move_group_default_capabilities.so.2.5.10
@@ -167,34 +176,6 @@ arm_planning_node: /opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_model.so.3.0
 arm_planning_node: /opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_world.so.3.0
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libtinyxml.so
 arm_planning_node: /opt/ros/humble/lib/libmoveit_utils.so.2.5.10
-arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_generator_c.so
-arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_generator_c.so
-arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_generator_c.so
-arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_generator_c.so
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libboost_chrono.so.1.74.0
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libboost_date_time.so.1.74.0
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.74.0
@@ -203,28 +184,14 @@ arm_planning_node: /usr/lib/x86_64-linux-gnu/libboost_program_options.so.1.74.0
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libboost_regex.so.1.74.0
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libboost_serialization.so.1.74.0
 arm_planning_node: /opt/ros/humble/lib/libgeometric_shapes.so.2.3.4
-arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_generator_c.so
 arm_planning_node: /opt/ros/humble/lib/libvisualization_msgs__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_fastrtps_c.so
 arm_planning_node: /opt/ros/humble/lib/libvisualization_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_fastrtps_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libvisualization_msgs__rosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_introspection_c.so
 arm_planning_node: /opt/ros/humble/lib/libvisualization_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_introspection_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libvisualization_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libvisualization_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_generator_py.so
 arm_planning_node: /opt/ros/humble/lib/libvisualization_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_c.so
 arm_planning_node: /opt/ros/humble/lib/libvisualization_msgs__rosidl_generator_c.so
-arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_generator_c.so
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libfcl.so.0.7.0
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libccd.so
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libm.so
@@ -252,7 +219,6 @@ arm_planning_node: /opt/ros/humble/lib/librclcpp.so
 arm_planning_node: /opt/ros/humble/lib/liblibstatistics_collector.so
 arm_planning_node: /opt/ros/humble/lib/librcl.so
 arm_planning_node: /opt/ros/humble/lib/librmw_implementation.so
-arm_planning_node: /opt/ros/humble/lib/libament_index_cpp.so
 arm_planning_node: /opt/ros/humble/lib/librcl_logging_spdlog.so
 arm_planning_node: /opt/ros/humble/lib/librcl_logging_interface.so
 arm_planning_node: /usr/lib/x86_64-linux-gnu/libfmt.so.8.1.1
@@ -284,62 +250,69 @@ arm_planning_node: /opt/ros/humble/lib/libstatistics_msgs__rosidl_typesupport_c.
 arm_planning_node: /opt/ros/humble/lib/libstatistics_msgs__rosidl_generator_c.so
 arm_planning_node: /opt/ros/humble/lib/libtracetools.so
 arm_planning_node: /opt/ros/humble/lib/libtf2_msgs__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_fastrtps_c.so
 arm_planning_node: /opt/ros/humble/lib/libtf2_msgs__rosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_introspection_c.so
 arm_planning_node: /opt/ros/humble/lib/libtf2_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_fastrtps_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libtf2_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_introspection_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libtf2_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libtf2_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_generator_py.so
 arm_planning_node: /opt/ros/humble/lib/libtf2_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_c.so
 arm_planning_node: /opt/ros/humble/lib/libtf2_msgs__rosidl_generator_c.so
-arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_generator_c.so
-arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_generator_c.so
 arm_planning_node: /opt/ros/humble/lib/libtf2.so
+arm_planning_node: /usr/lib/x86_64-linux-gnu/libconsole_bridge.so.1.0
+arm_planning_node: /usr/lib/x86_64-linux-gnu/libcrypto.so
+arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_fastrtps_c.so
 arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_fastrtps_c.so
 arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/librosidl_typesupport_fastrtps_c.so
+arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_introspection_c.so
 arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_introspection_c.so
 arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_introspection_c.so
+arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_fastrtps_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_fastrtps_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_fastrtps_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_fastrtps_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_fastrtps_cpp.so
+arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_fastrtps_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_fastrtps_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_fastrtps_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_fastrtps_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_introspection_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_generator_c.so
-arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_generator_c.so
-arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/librosidl_typesupport_fastrtps_c.so
-arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_introspection_c.so
 arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_fastrtps_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_fastrtps_cpp.so
 arm_planning_node: /opt/ros/humble/lib/librosidl_typesupport_fastrtps_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libfastcdr.so.1.0.29
 arm_planning_node: /opt/ros/humble/lib/librmw.so
+arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_introspection_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_introspection_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_introspection_cpp.so
 arm_planning_node: /opt/ros/humble/lib/librosidl_typesupport_introspection_cpp.so
 arm_planning_node: /opt/ros/humble/lib/librosidl_typesupport_introspection_c.so
-arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_generator_py.so
-arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_c.so
-arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_generator_c.so
-arm_planning_node: /usr/lib/x86_64-linux-gnu/libpython3.10.so
-arm_planning_node: /usr/lib/x86_64-linux-gnu/libconsole_bridge.so.1.0
-arm_planning_node: /usr/lib/x86_64-linux-gnu/libcrypto.so
 arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_cpp.so
-arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_cpp.so
@@ -347,11 +320,48 @@ arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_cp
 arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_cpp.so
 arm_planning_node: /opt/ros/humble/lib/librosidl_typesupport_cpp.so
+arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libmoveit_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libobject_recognition_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libaction_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libsensor_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libshape_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/liboctomap_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libtrajectory_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libgeometry_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libstd_msgs__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libbuiltin_interfaces__rosidl_generator_c.so
+arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_generator_py.so
+arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_typesupport_c.so
+arm_planning_node: /opt/ros/humble/lib/libunique_identifier_msgs__rosidl_generator_c.so
 arm_planning_node: /opt/ros/humble/lib/librosidl_typesupport_c.so
 arm_planning_node: /opt/ros/humble/lib/librcpputils.so
 arm_planning_node: /opt/ros/humble/lib/librosidl_runtime_c.so
 arm_planning_node: /opt/ros/humble/lib/librcutils.so
+arm_planning_node: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+arm_planning_node: libplanning_math.a
+arm_planning_node: /opt/ros/humble/lib/libament_index_cpp.so
 arm_planning_node: CMakeFiles/arm_planning_node.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable arm_planning_node"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/arm_planning_node.dir/link.txt --verbose=$(VERBOSE)

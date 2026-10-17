@@ -34,12 +34,12 @@ run.sh
 
 ```bash
 cd /home/starbeloved/code/Robomaster/Engineer_27
-./scripts/build_ros.sh
-source .cache/ros2/install/setup.bash
+./build.sh
+source ros2_ws/install/setup.bash
 ./run.sh
 ```
 
-构建脚本只加载系统 ROS 并使用全新的 `.cache/ros2/{build,install,log}` 目录；以后继续使用这一目录。仓库中已跟踪的历史 `ros2_ws/build`、`install`、`log` 本次不清理，也不作为运行环境。
+构建脚本进入 `ros2_ws` 后使用标准 colcon 目录：`build/` 保存中间产物，`install/` 保存运行环境和已安装包，`log/` 保存构建日志。`run.sh` 自动加载 `ros2_ws/install/setup.bash`。此前使用的 `.cache/ros2` 不再作为构建或启动入口。
 
 总启动统一使用 `./run.sh`。接口包已改为 `act_interfaces`，Action 类型是 `act_interfaces/action/PlanMotion`，Topic 消息也使用此前缀；字段和 Action 地址 `/arm_planning/plan_motion` 保持不变。外部客户端需按新类型重新构建。
 
@@ -59,7 +59,14 @@ source .cache/ros2/install/setup.bash
 
 ## 提交目标：C++ 命令行客户端
 
-另开终端并加载相同 ROS 和工作区环境。客户端运行期间存在节点 `/arm_plan_goal`，收到结果后退出。
+另开终端加载当前工作区环境。`setup.bash` 必须使用 `source`（或 `. 文件路径`）加载，才能修改当前终端环境；直接执行 `./setup.bash` 不会设置父终端的环境。
+
+```bash
+cd /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws
+source install/setup.bash
+```
+
+也可以在 Engineer_27 根目录执行 `source ros2_ws/install/setup.bash`，二者等价。客户端运行期间存在节点 `/arm_plan_goal`，收到结果后退出。
 
 ```bash
 # 仅规划和显示，不改变当前关节反馈
@@ -251,9 +258,10 @@ ros2 topic echo /joint_states --once
 
 ```bash
 cd /home/starbeloved/code/Robomaster/Engineer_27
-source .cache/ros2/install/setup.bash
-colcon --log-base .cache/ros2/log test --build-base .cache/ros2/build --packages-select arm_planning arm_goal --event-handlers console_direct+
-colcon test-result --test-result-base .cache/ros2/build --verbose
+source ros2_ws/install/setup.bash
+cd ros2_ws
+colcon test --packages-select arm_planning arm_goal --event-handlers console_direct+
+colcon test-result --verbose
 ```
 
 八项集成测试针对独立 ROS 域内的模拟系统运行，会添加并移除测试障碍物、执行及取消模拟运动：

@@ -315,68 +315,20 @@ message(STATUS "Execute custom install script")
 
 # begin of custom install code
 
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_index/share/ament_index/resource_index/rosidl_interfaces/arm_planning" "DESTINATION" "share/ament_index/resource_index/rosidl_interfaces")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_index/share/ament_index/resource_index/rosidl_interfaces/arm_planning" "DESTINATION" "share/ament_index/resource_index/rosidl_interfaces")
-
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_c/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN" "*.h")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_c/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN" "*.h")
-
-# install(FILES "/opt/ros/humble/lib/python3.10/site-packages/ament_package/template/environment_hook/library_path.sh" "DESTINATION" "share/arm_planning/environment")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/opt/ros/humble/lib/python3.10/site-packages/ament_package/template/environment_hook/library_path.sh" "DESTINATION" "share/arm_planning/environment")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_environment_hooks/library_path.dsv" "DESTINATION" "share/arm_planning/environment")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_environment_hooks/library_path.dsv" "DESTINATION" "share/arm_planning/environment")
-
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_typesupport_fastrtps_c/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN_EXCLUDE" "*.cpp")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_typesupport_fastrtps_c/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN_EXCLUDE" "*.cpp")
-
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_typesupport_introspection_c/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN" "*.h")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_typesupport_introspection_c/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN" "*.h")
-
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_cpp/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN" "*.hpp")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_cpp/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN" "*.hpp")
-
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_typesupport_fastrtps_cpp/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN_EXCLUDE" "*.cpp")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_typesupport_fastrtps_cpp/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN_EXCLUDE" "*.cpp")
-
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_typesupport_introspection_cpp/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN" "*.hpp")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_typesupport_introspection_cpp/arm_planning/" "DESTINATION" "include/arm_planning/arm_planning" "PATTERN" "*.hpp")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_environment_hooks/pythonpath.sh" "DESTINATION" "share/arm_planning/environment")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_environment_hooks/pythonpath.sh" "DESTINATION" "share/arm_planning/environment")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_environment_hooks/pythonpath.dsv" "DESTINATION" "share/arm_planning/environment")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_environment_hooks/pythonpath.dsv" "DESTINATION" "share/arm_planning/environment")
-
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_python/arm_planning/arm_planning.egg-info/" "DESTINATION" "local/lib/python3.10/dist-packages/arm_planning-0.1.0-py3.10.egg-info")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_python/arm_planning/arm_planning.egg-info/" "DESTINATION" "local/lib/python3.10/dist-packages/arm_planning-0.1.0-py3.10.egg-info")
-
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_py/arm_planning/" "DESTINATION" "local/lib/python3.10/dist-packages/arm_planning" "PATTERN_EXCLUDE" "*.pyc" "PATTERN_EXCLUDE" "__pycache__")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_py/arm_planning/" "DESTINATION" "local/lib/python3.10/dist-packages/arm_planning" "PATTERN_EXCLUDE" "*.pyc" "PATTERN_EXCLUDE" "__pycache__")
-
-# install("TARGETS" "arm_planning__rosidl_typesupport_fastrtps_c__pyext" "DESTINATION" "local/lib/python3.10/dist-packages/arm_planning")
+# install("TARGETS" "arm_planning_node" "DESTINATION" "lib/arm_planning")
 include("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_symlink_install_targets_0_${CMAKE_INSTALL_CONFIG_NAME}.cmake")
 
-# install("TARGETS" "arm_planning__rosidl_typesupport_introspection_c__pyext" "DESTINATION" "local/lib/python3.10/dist-packages/arm_planning")
+# install("TARGETS" "planning_math" "node_config" "planning_runtime" "DESTINATION" "lib")
 include("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_symlink_install_targets_1_${CMAKE_INSTALL_CONFIG_NAME}.cmake")
 
-# install("TARGETS" "arm_planning__rosidl_typesupport_c__pyext" "DESTINATION" "local/lib/python3.10/dist-packages/arm_planning")
-include("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_symlink_install_targets_2_${CMAKE_INSTALL_CONFIG_NAME}.cmake")
+# install(DIRECTORY "include/" "DESTINATION" "include")
+ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "include/" "DESTINATION" "include")
 
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_index/share/ament_index/resource_index/rust_packages/arm_planning" "DESTINATION" "share/ament_index/resource_index/rust_packages")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_index/share/ament_index/resource_index/rust_packages/arm_planning" "DESTINATION" "share/ament_index/resource_index/rust_packages")
+# install(DIRECTORY "config" "DESTINATION" "share/arm_planning")
+ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "config" "DESTINATION" "share/arm_planning")
 
-# install(DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_rs/arm_planning/rust" "DESTINATION" "share/arm_planning")
-ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_rs/arm_planning/rust" "DESTINATION" "share/arm_planning")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_adapter/arm_planning/action/PlanMotion.idl" "DESTINATION" "share/arm_planning/action")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_adapter/arm_planning/action/PlanMotion.idl" "DESTINATION" "share/arm_planning/action")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/action/PlanMotion.action" "DESTINATION" "share/arm_planning/action")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/action/PlanMotion.action" "DESTINATION" "share/arm_planning/action")
-
-# install("TARGETS" "arm_planning_node" "DESTINATION" "lib/arm_planning")
-include("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_symlink_install_targets_3_${CMAKE_INSTALL_CONFIG_NAME}.cmake")
+# install(DIRECTORY "launch" "DESTINATION" "share/arm_planning")
+ament_cmake_symlink_install_directory("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" DIRECTORY "launch" "DESTINATION" "share/arm_planning")
 
 # install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/arm_planning" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")
 ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/arm_planning" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")
@@ -413,30 +365,6 @@ ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27
 
 # install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_index/share/ament_index/resource_index/packages/arm_planning" "DESTINATION" "share/ament_index/resource_index/packages")
 ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_index/share/ament_index/resource_index/packages/arm_planning" "DESTINATION" "share/ament_index/resource_index/packages")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_cmake/rosidl_cmake-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_cmake/rosidl_cmake-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_export_dependencies/ament_cmake_export_dependencies-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_export_dependencies/ament_cmake_export_dependencies-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_export_include_directories/ament_cmake_export_include_directories-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_export_include_directories/ament_cmake_export_include_directories-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_export_libraries/ament_cmake_export_libraries-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_export_libraries/ament_cmake_export_libraries-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_export_targets/ament_cmake_export_targets-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_export_targets/ament_cmake_export_targets-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_cmake/rosidl_cmake_export_typesupport_targets-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_cmake/rosidl_cmake_export_typesupport_targets-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-
-# install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_cmake/rosidl_cmake_aggregate_target-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
-ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_cmake/rosidl_cmake_aggregate_target-extras.cmake" "DESTINATION" "share/arm_planning/cmake")
 
 # install(FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_core/arm_planningConfig.cmake" "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_core/arm_planningConfig-version.cmake" "DESTINATION" "share/arm_planning/cmake")
 ament_cmake_symlink_install_files("/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning" FILES "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_core/arm_planningConfig.cmake" "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/ament_cmake_core/arm_planningConfig-version.cmake" "DESTINATION" "share/arm_planning/cmake")

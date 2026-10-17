@@ -1,6 +1,0 @@
-{
-  "package_name": "arm_planning",
-  "non_idl_tuples": [
-    "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning:action/PlanMotion.action"
-  ]
-}

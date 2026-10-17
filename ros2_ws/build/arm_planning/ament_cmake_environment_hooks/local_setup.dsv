@@ -1,4 +1,2 @@
 source;share/arm_planning/environment/ament_prefix_path.sh
-source;share/arm_planning/environment/library_path.sh
 source;share/arm_planning/environment/path.sh
-source;share/arm_planning/environment/pythonpath.sh

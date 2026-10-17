@@ -8,12 +8,14 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/arm_planning_node.cpp" "CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o" "gcc" "CMakeFiles/arm_planning_node.dir/src/arm_planning_node.cpp.o.d"
+  "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/src/arm_planning/src/main.cpp" "CMakeFiles/arm_planning_node.dir/src/main.cpp.o" "gcc" "CMakeFiles/arm_planning_node.dir/src/main.cpp.o.d"
   )
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
-  "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/CMakeFiles/arm_planning__rosidl_typesupport_cpp.dir/DependInfo.cmake"
+  "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/CMakeFiles/planning_runtime.dir/DependInfo.cmake"
+  "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/CMakeFiles/node_config.dir/DependInfo.cmake"
+  "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/CMakeFiles/planning_math.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

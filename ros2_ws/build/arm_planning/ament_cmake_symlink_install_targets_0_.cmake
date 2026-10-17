@@ -1,1 +1,1 @@
-ament_cmake_symlink_install_targets("TARGET_FILES" "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/rosidl_generator_py/arm_planning/arm_planning_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so" "TARGETS" "arm_planning__rosidl_typesupport_fastrtps_c__pyext" "DESTINATION" "local/lib/python3.10/dist-packages/arm_planning")
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning/arm_planning_node" "TARGETS" "arm_planning_node" "DESTINATION" "lib/arm_planning")
