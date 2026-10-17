@@ -1,1 +1,0 @@
-rclcpp;rclcpp_action;ament_index_cpp;act_interfaces;moveit_core;moveit_msgs;moveit_ros_planning_interface;launch;launch_ros;moveit_config;ament_cmake_gtest;rclpy;ament_index_python;action_msgs;sensor_msgs;shape_msgs

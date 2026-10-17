@@ -1,4 +1,0 @@
-Invoking command in '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning -- -j32 -l32
-Invoked command in '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning -- -j32 -l32
-Invoking command in '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning
-Invoked command in '/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/arm_planning

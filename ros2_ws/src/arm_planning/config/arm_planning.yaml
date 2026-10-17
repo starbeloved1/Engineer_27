@@ -1,10 +1,9 @@
 arm_planning:
   ros__parameters:
-    # 输入：act_interfaces/action/PlanMotion，目标客户端为调用方
     planning_action: /arm_planning/plan_motion
-    # 请求 MoveIt 获取完整规划场景：moveit_msgs/srv/GetPlanningScene
+    # 请求 MoveIt 获取完整规划场景
     scene_service: /get_planning_scene
-    # 输出给 RViz 的预览轨迹：moveit_msgs/msg/DisplayTrajectory
+    # 输出给 RViz 的预览轨迹
     display_topic: /arm_planning/display_planned_path
 
     # 以下名称必须与 SRDF、URDF、OMPL 配置一致

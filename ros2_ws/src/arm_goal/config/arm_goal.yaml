@@ -1,18 +1,15 @@
 arm_goal:
   ros__parameters:
-    # 订阅：act_interfaces/msg/MotionTarget，来自命令发布者；非空 request_id 每次唯一。
+    #sub                     
     target_topic: /arm_goal/target
-    # 订阅：std_msgs/msg/String，data 为需要取消的当前 request_id。
     cancel_topic: /arm_goal/cancel
-    # 发布：act_interfaces/msg/MotionFeedback，携带 request_id 和阶段反馈。
+    #pub，反馈给订阅者（后续接入的gimbal_driver）
     feedback_topic: /arm_goal/feedback
-    # 发布：act_interfaces/msg/MotionResult，携带 request_id、结果和轨迹。
     result_topic: /arm_goal/result
-    # Action 客户端 → arm_planning；CLI 与 Topic 输入都使用这个服务端。
+    #act
     planning_action: /arm_planning/plan_motion
-    # 首次发现后等待响应通道匹配，本机 Fast DDS 的短时客户端需要；单位 s，0 可禁用。
+    
     discovery_settle_time: 0.5
     server_timeout: 20.0
     acceptance_timeout: 20.0
     request_timeout: 120.0
-    # 使用 Reliable + Volatile；忙时拒绝新目标，不排队、不抢占，不重放历史命令。

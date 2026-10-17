@@ -1,9 +1,0 @@
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/uninstall.dir
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/engineer27_description_uninstall.dir
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/test.dir
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/edit_cache.dir
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/rebuild_cache.dir
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/list_install_components.dir
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/install.dir
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/install/local.dir
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/CMakeFiles/install/strip.dir

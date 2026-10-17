@@ -1,1 +1,0 @@
-/home/starbeloved/code/Robomaster/Engineer_27/ros2_ws/build/engineer27_description/ament_cmake_core/engineer27_descriptionConfig.cmake

@@ -31,13 +31,13 @@ for argument in "$@"; do
   esac
 done
 
-if [[ ! -f "$engineer_root/.cache/ros2/install/setup.bash" ]]; then
-  echo "请先运行 ./scripts/build_ros.sh" >&2
+if [[ ! -f "$engineer_root/ros2_ws/install/setup.bash" ]]; then
+  echo "请先运行 ./build.sh" >&2
   exit 1
 fi
 unset AMENT_PREFIX_PATH CMAKE_PREFIX_PATH COLCON_PREFIX_PATH PYTHONPATH LD_LIBRARY_PATH
 source /opt/ros/humble/setup.bash
-source "$engineer_root/.cache/ros2/install/setup.bash"
+source "$engineer_root/ros2_ws/install/setup.bash"
 
 pids=()
 cleanup_started=false
