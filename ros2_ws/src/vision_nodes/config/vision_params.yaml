@@ -1,0 +1,6 @@
+main_visualizer:
+  ros__parameters:
+    color_topic: /camera/camera/color/image_raw # sub
+    visualization_topic: /vision/visualization/image # pub
+    visualization_rate_hz: 0.0 # 0 表示跟随相机，正数表示调试图最大发布频率
+    input_reliability: reliable # 本机大图像实测使用可靠传输；回放可改为 best_effort

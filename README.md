@@ -1,8 +1,22 @@
-# Engineer 27：离线路径规划
+# Engineer 27：机械臂规划与取矿视觉
 
-当前系统使用现有模型，完成关节目标和末端位姿目标规划、碰撞检查、轨迹预览及模拟执行。业务节点和目标客户端均为 C++；Python 用于 launch、资源转换与测试。视觉、真实控制接口、TCP 标定和实际机械限位不在本阶段范围。
+机械臂部分使用现有模型，完成关节目标和末端位姿目标规划、碰撞检查、轨迹预览及模拟执行；规划业务和目标客户端为 C++。取矿视觉目前完成第一步：D435 彩色图、原始深度和场景点云，Python ROS 包 `vision_nodes` 的 `main_visualizer` 统一发布调试图，由 Foxglove 显示。真实控制接口、TCP 标定和实际机械限位尚未接入。
 
-## 六个包的职责
+## 先运行相机与点云
+
+关闭 RealSense Viewer，在未激活 Conda 的系统终端中运行：
+
+```bash
+cd /home/starbeloved/code/Robomaster/Engineer/Engineer_27
+./build.sh --packages-select vision_nodes
+./run.sh mode:=vision
+```
+
+在 Foxglove 中通过 Foxglove WebSocket 连接 `ws://127.0.0.1:8765`：Image 面板选择 `/vision/visualization/image`，3D 面板选择 `camera_link` 并启用 `/camera/camera/depth/color/points`。当前 USB 2 默认使用已验证的 640×480、6 FPS；配置、话题、阅读顺序和验证方法见 [vision_nodes 入门说明](ros2_ws/src/vision_nodes/README.md)。这一阶段没有运行 YOLO 或 ICP，点云也不是已识别出的单矿。
+
+当前视觉主线是参考 `engineer_2026` 的 `jetson` 分支，先接通相机，再接 YOLO 检测与目标点云。此前的科技核心单目兑矿结构分析保留在 [北理 PnP 仓库结构解析](docs/bit_pnp_architecture.md)，不作为当前相机实验入口。
+
+## 七个包的职责
 
 | 包 | 职责 | 运行节点或组件 |
 | --- | --- | --- |
@@ -12,8 +26,9 @@
 | `moveit_config` | 纯机器人模型、SRDF、KDL、OMPL、MoveIt 执行端映射 | launch 启动 `/move_group` |
 | `sim_controller` | 模拟硬件 Xacro、ros2_control 配置、控制器、关节状态和 TF | `/controller_manager`、`arm_controller`、`joint_state_broadcaster`、`robot_state_publisher`、`world_to_base` |
 | `arm_visualization` | 默认 RViz 显示与可选 MoveIt 原生调试窗口 | 默认 `/rviz2`，可选 `/rviz_native` |
+| `vision_nodes` | 取矿视觉节点、D435 配置、统一调试图与 Foxglove 接入 | `/camera/camera`、`/main_visualizer`、`/foxglove_bridge` |
 
-每个功能包都有自己的 launch，加载所属 YAML；根目录 `run.sh` 直接在后台启动各包 launch、记录 PID，并在 Ctrl+C 或任一被监控的 launch 进程退出时统一停止系统。启动列表只维护在 run.sh，没有总 launch 包。`arm_visualization` 只管理显示，不启动规划、控制器或坐标变换。
+每个功能包都有自己的 launch，加载所属 YAML；根目录 `run.sh` 直接在后台启动各包 launch、记录 PID，并在 Ctrl+C 或任一被监控的 launch 进程退出时统一停止系统。默认 `mode:=planning` 启动下图的机械臂系统；`mode:=vision` 只启动 `vision_nodes/vision_pipeline.launch.py`。启动列表只维护在 run.sh，没有总 launch 包。`arm_visualization` 只管理机械臂显示，不启动规划、控制器或坐标变换。
 
 ```text
 run.sh

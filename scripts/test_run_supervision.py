@@ -92,10 +92,48 @@ class RunSupervision(unittest.TestCase):
         self.run_system(fail_launch=True)
 
     def test_invalid_argument_does_not_start_system(self):
-        result = subprocess.run([str(ROOT / 'run.sh'), 'use_rviz:=invalid'], cwd=ROOT,
-                                capture_output=True, text=True, timeout=5)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn('未知或无效参数', result.stderr)
+        for argument in ['use_rviz:=invalid', 'mode:=invalid', 'start_camera:=invalid',
+                         'start_bridge:=invalid']:
+            with self.subTest(argument=argument):
+                result = subprocess.run([str(ROOT / 'run.sh'), argument], cwd=ROOT,
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn('未知或无效参数', result.stderr)
+
+    def test_second_vision_start_does_not_start_camera_or_bridge(self):
+        environment = dict(os.environ, ROS_DOMAIN_ID='194')
+        with tempfile.TemporaryDirectory(prefix='engineer_duplicate_') as directory:
+            path = Path(directory) / 'runtime.log'
+            with path.open('w') as log:
+                process = subprocess.Popen(
+                    [str(ROOT / 'run.sh'), 'mode:=vision', 'start_camera:=false',
+                     'start_bridge:=false'], cwd=ROOT, env=environment, stdout=log,
+                    stderr=subprocess.STDOUT, start_new_session=True)
+                tracked = set()
+                try:
+                    deadline = time.monotonic() + 15
+                    while time.monotonic() < deadline:
+                        self.assertIsNone(process.poll(), path.read_text())
+                        tracked.update(descendants(process.pid))
+                        if 'Main visualizer:' in path.read_text():
+                            break
+                        time.sleep(.1)
+                    else:
+                        self.fail('Visualizer did not become ready: ' + path.read_text())
+                    # 第二次使用默认参数；必须在启动硬件和占用端口之前退出
+                    result = subprocess.run(
+                        [str(ROOT / 'run.sh'), 'mode:=vision'], cwd=ROOT, env=environment,
+                        capture_output=True, text=True, timeout=5)
+                    self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                    self.assertIn('视觉流程已经在运行', result.stderr)
+                    self.assertNotIn('启动：', result.stdout)
+                    self.assertIsNone(process.poll(), path.read_text())
+                finally:
+                    if process.poll() is None:
+                        process.send_signal(signal.SIGINT)
+                        process.wait(timeout=20)
+                self.assertEqual(process.returncode, 0, path.read_text())
+                self.assertFalse([pid for pid in tracked if running(pid)], path.read_text())
 
 
 if __name__ == '__main__':
