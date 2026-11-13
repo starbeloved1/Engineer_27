@@ -8,10 +8,11 @@ usage() {
 用法：./run.sh [mode:=planning|vision] [use_rviz:=true|false]
                [start_planner:=true|false] [start_goal:=true|false]
                [controller_config:=FILE] [planner_config:=FILE] [goal_config:=FILE]
-               [start_camera:=true|false] [start_bridge:=true|false]
+               [start_camera:=true|false] [start_detector:=true|false] [start_bridge:=true|false]
                [camera_config:=FILE] [vision_config:=FILE] [foxglove_config:=FILE]
+               [yolo_python:=FILE]
 默认 planning：启动模拟控制、MoveIt、规划服务、Topic 客户端和 RViz。
-vision：只启动 D435、main_visualizer 和 Foxglove Bridge；请先关闭 RealSense Viewer。
+vision：启动 D435、yolo_detector、main_visualizer 和 Foxglove Bridge；请先关闭 RealSense Viewer。
 Foxglove 连接 ws://127.0.0.1:8765，use_rviz 参数仅用于 planning 模式。
 各包 launch 独立加载默认 YAML，配置路径参数仅用于显式覆盖；Ctrl+C 统一退出。
 HELP
@@ -32,18 +33,20 @@ for argument in "$@"; do
     use_rviz:=true|use_rviz:=false) use_rviz="${argument#*:=}" ;;
     start_planner:=true|start_planner:=false) start_planner="${argument#*:=}" ;;
     start_goal:=true|start_goal:=false) start_goal="${argument#*:=}" ;;
-    start_camera:=true|start_camera:=false|start_bridge:=true|start_bridge:=false)
+    start_camera:=true|start_camera:=false|start_bridge:=true|start_bridge:=false|start_detector:=true|start_detector:=false)
       vision_arguments+=("$argument") ;;
     controller_config:=?*) controller_arguments=("$argument") ;;
     planner_config:=?*) planner_arguments=("$argument") ;;
     goal_config:=?*) goal_arguments=("$argument") ;;
-    camera_config:=?*|vision_config:=?*|foxglove_config:=?*) vision_arguments+=("$argument") ;;
+    camera_config:=?*|vision_config:=?*|foxglove_config:=?*|yolo_python:=?*) vision_arguments+=("$argument") ;;
     *) echo "未知或无效参数：$argument" >&2; usage >&2; exit 2 ;;
   esac
 done
 
 # 同一工作区、同一 ROS 域只允许一套视觉流程，提前阻止相机和端口争用
 if [[ "$mode" == vision ]]; then
+  # 视觉 YAML 中的相对权重路径统一以 Engineer_27 根目录为基准
+  cd "$engineer_root"
   mkdir -p "$engineer_root/.cache"
   exec {vision_lock_fd}>"$engineer_root/.cache/vision_${ROS_DOMAIN_ID:-0}.lock"
   if ! flock -n "$vision_lock_fd"; then

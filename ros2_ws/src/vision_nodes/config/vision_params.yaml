@@ -1,6 +1,21 @@
+yolo_detector:
+  ros__parameters:
+    model_path: assets/best.pt # 相对于 Engineer_27 根目录，来源为 26 的 jetson 分支
+    color_topic: /camera/camera/color/image_raw # sub
+    detection_topic: /vision/yolo/detections # pub
+    conf_thres: 0.3
+    iou_thres: 0.45
+    device: cpu
+    imgsz: 640
+    log_every_n: 30
+    input_reliability: reliable
+
 main_visualizer:
   ros__parameters:
     color_topic: /camera/camera/color/image_raw # sub
     visualization_topic: /vision/visualization/image # pub
+    detection_topic: /vision/yolo/detections # sub
+    draw_detections: true # 由 launch 的 start_detector 开关联动
+    sync_queue_size: 30 # 缓存原图等待同一采集时间戳的检测结果
     visualization_rate_hz: 0.0 # 0 表示跟随相机，正数表示调试图最大发布频率
     input_reliability: reliable # 本机大图像实测使用可靠传输；回放可改为 best_effort

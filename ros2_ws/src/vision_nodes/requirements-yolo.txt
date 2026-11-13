@@ -1,0 +1,4 @@
+# 安装到 conda engineer 环境，ROS 侧继续使用系统 Humble
+numpy==1.26.4
+opencv-python==4.11.0.86
+ultralytics==8.4.211

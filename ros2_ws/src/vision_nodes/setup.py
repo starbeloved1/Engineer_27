@@ -9,7 +9,7 @@ setup(
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/vision_nodes']),
-        ('share/vision_nodes', ['package.xml', 'README.md']),
+        ('share/vision_nodes', ['package.xml', 'README.md', 'requirements-yolo.txt']),
         ('share/vision_nodes/launch', glob('launch/*.launch.py')),
         ('share/vision_nodes/config', glob('config/*.yaml')),
     ],
@@ -22,6 +22,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'yolo_detector = vision_nodes.yolo_detector_node:main',
             'main_visualizer = vision_nodes.main_visualizer_node:main',
         ],
     },

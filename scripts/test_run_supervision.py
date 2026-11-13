@@ -93,7 +93,7 @@ class RunSupervision(unittest.TestCase):
 
     def test_invalid_argument_does_not_start_system(self):
         for argument in ['use_rviz:=invalid', 'mode:=invalid', 'start_camera:=invalid',
-                         'start_bridge:=invalid']:
+                         'start_bridge:=invalid', 'start_detector:=invalid']:
             with self.subTest(argument=argument):
                 result = subprocess.run([str(ROOT / 'run.sh'), argument], cwd=ROOT,
                                         capture_output=True, text=True, timeout=5)
@@ -107,7 +107,7 @@ class RunSupervision(unittest.TestCase):
             with path.open('w') as log:
                 process = subprocess.Popen(
                     [str(ROOT / 'run.sh'), 'mode:=vision', 'start_camera:=false',
-                     'start_bridge:=false'], cwd=ROOT, env=environment, stdout=log,
+                     'start_bridge:=false', 'start_detector:=false'], cwd=ROOT, env=environment, stdout=log,
                     stderr=subprocess.STDOUT, start_new_session=True)
                 tracked = set()
                 try:
