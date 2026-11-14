@@ -28,23 +28,27 @@ D435 → 官方驱动 /camera/camera
 - `main_visualizer`：原图与检测按完全相同的采集时间戳配对，检查坐标系，在副本上画框。没有显示端订阅时不生成调试图。关闭检测时转发原图。
 - `icp_registration`：模型加载、单位转换和采样只在启动时做一次；每对采集时间接近的点云／检测执行框内筛选、体素和离群点过滤、局部点到点 ICP。处理不依赖 Foxglove 是否打开。
 - `pointcloud_geometry.py`：几何算法；`pointcloud_messages.py`：PointCloud2 与 NumPy 转换。
-- launch：加载所属 YAML，管理各节点，任一进程退出时停止同组进程。
+- `vision_pipeline.launch.py`：加载所属 YAML，管理视觉节点，任一进程退出时停止同组进程。`vision_rviz.launch.py` 只附加显示窗口。
+
+模型采样已对齐 26 Python：在原 STL 单位中进行 2000 点泊松盘采样，按 `model_voxel_size=0.005` 体素过滤，再将 float32 坐标乘 `model_scale=0.001` 转为米。这里模型体素是 **0.005 mm**，沿用参考实现的处理顺序；观测目标云的 `voxel_size=0.005` 则为 **5 mm**，两者独立。采样使用固定随机种子，便于比较。这只对齐模型采样，不表示过滤、ICP 门槛等全部等价于 26。
 
 图像可视化由 `main_visualizer` 绘制。场景云、目标云和模型叠合云都是标准三维数据，直接由 Foxglove 的 3D 面板显示，不渲染成二维图像。
 
 ## 构建与启动
 
-终端使用系统 ROS 2 Humble，无需激活 Conda。launch 为 YOLO 和 ICP 选择 Conda `engineer` 的 Python 3.10，基础 ROS 节点继续使用系统 Python。当前默认 CPU 推理；Open3D 也使用 CPU。
+终端使用系统 ROS 2 Humble，无需激活 Conda。launch 为 YOLO 和 ICP 选择 Conda `engineer` 的 Python 3.10，基础 ROS 节点继续使用系统 Python。当前 YOLO 保留 `device: cpu`，使用 CPU；本机环境支持 CUDA，可改为 `device: "0"` 使用第一张 NVIDIA GPU。Open3D ICP 仍使用 CPU。
 
 本机依赖已安装。复现 Python 环境时：
 
 ```bash
 conda activate engineer
-python -m pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install torch==2.8.0+cu128 torchvision==0.23.0+cu128 --index-url https://download.pytorch.org/whl/cu128
 python -m pip install -r ros2_ws/src/vision_nodes/requirements-yolo.txt
 python -m pip install -r ros2_ws/src/vision_nodes/requirements-icp.txt
 conda deactivate
 ```
+
+上述 CUDA 12.8 版本用于本机 RTX 5060 Laptop GPU；仅 CPU 环境可改用官方 `https://download.pytorch.org/whl/cpu` 索引安装 `torch==2.8.0 torchvision==0.23.0`，同时将 `device` 设为 `cpu`。`gpu` 不是有效的设备值。YAML 中 GPU 编号使用字符串 `"0"`，避免被 ROS 当成整数参数；GPU 推理还要求 CUDA 版 PyTorch 和可用的 NVIDIA 驱动。安装方式见 [PyTorch 官方版本列表](https://pytorch.org/get-started/previous-versions/)，设备参数见 [Ultralytics 官方说明](https://docs.ultralytics.com/modes/predict/#inference-arguments)。
 
 先关闭 RealSense Viewer 或旧的相机流水线，在 Engineer_27 根目录运行：
 
@@ -68,6 +72,67 @@ conda deactivate
 配置覆盖参数是 `camera_config:=FILE`、`vision_config:=FILE`、`foxglove_config:=FILE`。`yolo_python:=FILE`、`icp_python:=FILE` 分别选择解释器；默认根据 `CONDA_EXE`／`conda` 可执行路径寻找 `engineer`，找不到 Conda 时使用 launch 的 Python。
 
 `run.sh` 将相对模型路径基准固定为 Engineer_27 根目录。单独运行 `ros2 launch vision_nodes vision_pipeline.launch.py` 时，也应在该目录，或在 YAML 中配置绝对模型路径。`start_icp` 默认 true，但只有 `start_detector=true` 时才启动；独立接入其他检测源可单独运行 ICP 节点。
+
+## 鼠标框选固定 ROI（两条配准链路共用）
+
+在所用包 `config/vision_params.yaml` 的 `yolo_detector.ros__parameters` 中设置
+`use_manual_roi: true`，然后正常启动 `mode:=vision` 或 `mode:=vision_pcl`。
+默认 false，继续使用 YOLO。手动模式仍需保持 `start_detector=true`，此时 detector 负责发布手动框。
+
+收到彩色图后弹出 **Manual ROI - drag to set or replace** 窗口。按住鼠标左键拖出矩形并松开，
+即确定 ROI；以后每帧都使用同一组原图像素坐标，并写入当前图像时间戳。
+再次拖框并松开才替换旧框；拖动过程中、取消拖动、关闭窗口都不清空原框。
+尚未确定第一个框时，每帧发布空检测。手动模式跳过 YOLO 模型加载和推理，后续点云与配准照常运行。
+
+运行中也可以切换，不需要重启整条链路：
+
+```bash
+ros2 param set /yolo_detector use_manual_roi true
+# 关闭/隐藏选框窗口后，重新显示窗口进行下一次框选：
+ros2 service call /yolo_detector/select_roi std_srvs/srv/Trigger '{}'
+# 恢复 YOLO；第一次恢复时按需加载权重：
+ros2 param set /yolo_detector use_manual_roi false
+```
+
+Esc 取消正在拖动的新框；Q 或关闭按钮隐藏交互窗口，已有 ROI 仍持续发布。
+关闭再开启手动模式也保留同尺寸/同 frame_id 图像中的旧框。交互窗口按原图尺寸显示，
+无需 Enter 确认；Foxglove/RViz 的正常可视化仍由 main_visualizer 和点云话题提供。
+
+手动框使用 `Detection2DArray` 原接口，`Detection2D.id` 和 `class_id` 为 `manual_roi`，
+`score=1.0` 是手动输入的占位值，不是模型识别置信度。它是固定图像区域，不会跟随物体移动。
+ROI 保存在本次运行内，重启后需重选；图像尺寸或 frame_id 改变时会失效并输出空检测，要求重新框选。
+框选窗口需要本机图形桌面，不适用于无显示的 SSH 终端。
+
+## RViz 相机视角查看
+
+在已构建的 Engineer_27 根目录，单独打开显示窗口：
+
+```bash
+source ros2_ws/install/setup.bash
+ros2 launch vision_nodes vision_rviz.launch.py
+```
+
+这个入口只订阅现有图像、点云和 TF，不启动相机、YOLO 或 ICP；关闭窗口不影响已有视觉流水线。需要另一个终端先运行 `./run.sh mode:=vision`。
+
+也可以在总入口一次启动视觉和窗口：
+
+```bash
+./run.sh mode:=vision use_rviz:=true
+```
+
+总入口仍按已有规则统一管理进程：Ctrl+C 或任一 launch 退出，会停止同组进程。需要随意关闭／重开 RViz 时，优先使用独立显示入口。vision 模式默认仍不打开 RViz，planning 模式的默认行为不变。
+
+配置为 [config/vision.rviz](config/vision.rviz)，可用 `rviz_config:=FILE` 覆盖独立入口的配置路径。默认布局：
+
+- 右侧 **Camera View**：使用 `/camera/camera/color/image_raw` 及同目录的 `camera_info`，通过 TF 与相机投影参数固定视角；彩色图为背景。不要用 `/vision/visualization/image` 替换 Camera 的图像话题，它没有同目录的 CameraInfo。
+- 中间三维窗口：默认近距离斜视，允许自由旋转；不会改变右侧相机窗口。在左下 **Views** 收起 `Current View`，双击保存的 `1 - Camera direction`、`2 - Side`、`3 - Top`、`4 - Overview` 恢复方向。侧面／俯视默认围绕相机前方 0.45 m；距离变化较大时调整 Focal Point 和 Distance。
+- 绿色 **Target (green)**：`/vision/icp/target_cloud`，过滤后的实际观测点，3 px。
+- 红色 **Aligned Model (red)**：`/vision/icp/aligned_cloud`，通过验收的模型，2 px。没有红点时不代表矿没有深度，应检查 ICP 验收结果；这里不显示被拒绝的候选。
+- **ROI before filtering** 与 **Full Scene (RGB)** 默认关闭，需要比较过滤前点云或完整场景时在 Displays 中勾选。比较时可暂时关闭 Target，减少重叠遮挡。
+
+Fixed Frame 为 `camera_link`。展开 Camera View 后可调 `Zoom Factor`：1 保留完整相机视野，2 放大中心区域但不改变朝向，可能裁掉画面边缘的矿。绿色点太密时减小 Target 的 `Size (Pixels)`，或暂时关闭它只看红色模型。相机窗口固定视角不等于锁定数据采集时间，运动时需留意各话题的到达延迟。
+
+这套配置不订阅没有相机 TF 的 `energy_model` 原模型，不增加算法或控制节点。无检测时目标云为空；无图像／TF 时会显示等待状态，不生成替代数据。
 
 ## Foxglove 查看
 
@@ -124,9 +189,9 @@ PoseArray 只包含当前帧通过阈值的结果，按输入框遍历顺序排�
 
 ## 参数
 
-参数归属均在 `config/vision_params.yaml`，节点启动时读取，修改后重启。
+参数归属均在 `config/vision_params.yaml`。除 `use_manual_roi` 支持运行中切换外，其余节点业务参数在启动时读取，修改后重启。
 
-- `yolo_detector`：`model_path=assets/best.pt`、`conf_thres=0.3`、`iou_thres=0.45`、`imgsz=640`、`device=cpu`。阈值用于 YOLO 检测；imgsz 为推理尺寸，输出框仍对应原图。
+- `yolo_detector`：`use_manual_roi=false` 时正常运行 YOLO；设 true 使用固定手动框。其余参数包括 `model_path`、`conf_thres`、`iou_thres`、`imgsz`、`device`，实际值以当前 YAML 为准。阈值用于 YOLO 检测；imgsz 为推理尺寸，输出框仍对应原图。`device` 可改为字符串 `"0"` 使用第一张 NVIDIA GPU。
 - `main_visualizer`：`draw_detections` 由 launch 的 `start_detector` 联动；`sync_queue_size=30`；`visualization_rate_hz=0.0` 表示跟随输入，正数限制调试图最大发布频率。
 - `camera.yaml` 归 RealSense 驱动，启用深度对齐、彩色点云和内部 TF。
 - `foxglove_bridge.yaml` 归 Bridge，控制地址、端口、话题白名单和订阅 QoS。
@@ -136,7 +201,9 @@ ICP 的主要调节项：
 | 参数 | 默认值 | 含义 |
 | --- | --- | --- |
 | `model_path` / `model_scale` | `assets/energy.stl` / `0.001` | 网格路径，mm 转 m，保留原坐标原点 |
-| `sample_points` / `voxel_size` | `3000` / `0.005` | 表面采样数、体素尺寸 m；先转换单位再下采样 |
+| `sample_points` | `2000` | 模型表面泊松盘采样点数，与 26 Python 一致 |
+| `model_voxel_size` | `0.005` | 原模型单位中的体素尺寸；当前 STL 为 mm，在缩放前应用，0 禁用 |
+| `voxel_size` | `0.005` | 仅观测目标云的体素尺寸 m，0 禁用 |
 | `min_depth` / `max_depth` | `0.2` / `2.0` | 彩色光学系 Z 深度范围 m |
 | `bbox_shrink_ratio` | `0.0` | 框宽高收缩比例，背景过多时可试 0.1 |
 | `sor_neighbors` / `sor_std_ratio` | `20` / `1.5` | 统计离群点过滤；neighbors=0 禁用 |
@@ -145,7 +212,7 @@ ICP 的主要调节项：
 | `max_corr_dist` | `0.03` | ICP 对应点距离上限 m，不是相机量程 |
 | `max_icp_iter` | `100` | ICP 最大迭代次数 |
 | `fitness_threshold` | `0.3` | Open3D 模型点匹配比例下限 |
-| `max_inlier_rmse` | `0.015` | 有效对应点残差上限 m |
+| `max_inlier_rmse` | `0.015` | 有效对应点残差上限 m；0 禁用上限，仍检查结果有限性、匹配比例与对应点数 |
 | `sync_queue_size` / `sync_slop` | `30` / `0.05` | 同步缓存条数／采集时间差上限 s |
 | `max_data_age` | `1.5` | 输入最大年龄及断流清空等待时间 s |
 
@@ -162,6 +229,11 @@ ROS_DOMAIN_ID=198 PYTHONNOUSERSITE=1 OMP_NUM_THREADS=2 \
   ros2_ws/src/vision_nodes/test/test_pointcloud_pipeline.py -v
 ```
 
-也可以直接用 engineer 环境的 Python 路径运行该文件。六项测试覆盖投影外参、无效深度、RGB 与大端／行填充转换、模型尺寸和原点、已知刚体变换回验、真实 ROS 近似配对与 TF、空检测、缺失 TF、过期数据及断流清空。系统 colcon 没有 Open3D 时会明确跳过该测试模块，不能把跳过视为 ICP 通过。
+也可以直接用 engineer 环境的 Python 路径运行该文件。测试覆盖投影外参、无效深度、RGB 与大端／行填充转换、模型尺寸和原点、已知刚体变换回验、RMSE 上限禁用与整数 0 参数启动、真实 ROS 近似配对与 TF、空检测、缺失 TF、过期数据及断流清空。系统 colcon 没有 Open3D 时会明确跳过该测试模块，不能把跳过视为 ICP 通过。
+
+手动 ROI 可单独在系统 Python 下回验，无需相机、窗口或 YOLO 权重：加载当前工作区后，
+在 Engineer_27 根目录执行 `/usr/bin/python3 ros2_ws/src/vision_nodes/test/test_manual_roi.py`。
+覆盖固定框跨帧保留、拖动完成后替换、取消/关闭窗口保留、边界裁剪、图像几何变化、
+真实 ROS 新时间戳、重新显示窗口服务和运行中切回 YOLO。
 
 实物验收需要另行观察：框内是否包含矿的有效表面、模型叠合是否正确、不同朝向和遮挡下是否稳定。当前自动验证不证明这些指标已经达标。

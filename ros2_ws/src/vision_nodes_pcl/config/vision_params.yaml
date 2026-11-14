@@ -1,0 +1,72 @@
+yolo_detector:
+  ros__parameters:
+    use_manual_roi: true # true：鼠标拖框代替 YOLO；框选完成后逐帧沿用，重新拖框才替换
+    model_path: assets/best.pt
+    color_topic: /camera/camera/color/image_raw
+    detection_topic: /vision/yolo/detections
+    conf_thres: 0.5
+    iou_thres: 0.45
+    device: '0'
+    imgsz: 640
+    log_every_n: 30
+    input_reliability: reliable
+main_visualizer:
+  ros__parameters:
+    color_topic: /camera/camera/color/image_raw
+    visualization_topic: /vision/visualization/image
+    detection_topic: /vision/yolo/detections
+    draw_detections: true
+    sync_queue_size: 30
+    visualization_rate_hz: 0.0
+    input_reliability: reliable
+model_cloud_publisher:
+  ros__parameters:
+    model_path: assets/energy.ply
+    sample_points: 5000 # 随机限点的上限，不生成新的表面采样点
+    voxel_size: 0.005 # m，模型在缩放后做 5 mm 体素
+    frame_id: energy_model # CAD 原点/轴向，不连接相机固定 TF
+    scale: 0.001 # PLY 的 mm → ROS m
+    publish_rate: 100.0 # Hz，保持 26 模型发布频率
+    topic: /vision/model_cloud
+icp_registration:
+  ros__parameters:
+    pointcloud_topic: /camera/camera/depth/color/points
+    camera_info_topic: /camera/camera/color/camera_info
+    detection_topic: /vision/yolo/detections
+    source_cloud_topic: /vision/model_cloud
+    target_cloud_topic: /vision/icp/target_cloud
+    pose_topic: /vision/icp/object_poses
+    max_icp_iter: 120 # PCL 最大迭代次数，其余停止条件沿用库默认值
+    voxel_size: 0.006 # m，源模型和目标观测均再做 6 mm 体素
+    max_corr_dist: 1.0 # m，26 原版最大对应距离
+    min_points: 80 # ROI 提取后和过滤后的观测点下限
+    sor_mean_k: 20 # 先 SOR，再体素；近邻数
+    sor_std_mul: 0.8 # SOR 标准差倍数
+    max_range: 1.5 # m，原始相机 XYZ 到原点的欧氏距离；0 禁用
+    bbox_shrink_ratio: 0.0 # 每侧收缩比例 [0,0.45]，与 Python 参数定义不同
+    use_prev_init: true # 按检测数组下标缓存，不是稳定身份跟踪
+    fitness_threshold: 0.92 # metric=1/(1+MSE)，不是覆盖率
+    max_fitness_score: 0.01 # m²，MSE 上限；0 禁用，仍检查收敛和 metric
+    publish_tf: true
+    log_debug: true
+    log_every_n: 10
+    centroid_init: true
+    use_hexagon_prior: true # 26 六矿布局先验，保留用于复现
+    hexagon_vertex_count: 6
+    hexagon_min_observations: 3
+    hexagon_nominal_radius: 0.0 # m，0 表示由本帧目标位置估计
+    hexagon_radius_tolerance: 0.03 # m
+    hexagon_snap_max_distance: 0.04 # m，槽位吸附门限
+    hexagon_snap_gain: 0.8 # 槽位吸附比例
+    hexagon_state_smoothing: 0.35 # 新观测权重
+    force_outward_z_axis: true # 修正物体 Z 轴向外，可能改变原始 ICP 朝向
+    enforce_z_axis_angle_constraint: true
+    z_axis_angle_constraint_gain: 1.0
+    z_axis_angle_max_deviation_deg: 180.0 # deg
+    target_frame: camera_link # 独立相机适配；有真实外参后可改 base_link
+    roi_cloud_topic: /vision/icp/roi_cloud
+    aligned_cloud_topic: /vision/icp/aligned_cloud
+    raw_aligned_cloud_topic: /vision/icp/raw_aligned_cloud
+    raw_pose_topic: /vision/icp/raw_object_poses
+    max_data_age: 1.5 # s，输入过旧/断流后清空可视化与缓存
+    input_reliability: reliable # 适配 27 的大点云传输；best_effort 可恢复 26 输入 QoS

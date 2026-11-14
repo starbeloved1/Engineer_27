@@ -12,11 +12,15 @@ cd /home/starbeloved/code/Robomaster/Engineer/Engineer_27
 ./run.sh mode:=vision
 ```
 
+需要固定相机视角的 RViz 时，使用 `./run.sh mode:=vision use_rviz:=true`。如果视觉流程已经运行，在另一个终端 `source ros2_ws/install/setup.bash` 后执行 `ros2 launch vision_nodes vision_rviz.launch.py`，仅附加显示窗口。右侧 Camera View 固定相机视角，绿色为观测点、红色为通过验收的模型；左下 Views 可恢复三维观察方向。详见 [RViz 观察说明](ros2_ws/src/vision_nodes/README.md#rviz-相机视角查看)。
+
 在 Foxglove 中通过 Foxglove WebSocket 连接 `ws://127.0.0.1:8765`：Image 面板选择 `/vision/visualization/image` 看检测框，3D 面板选择 `camera_link`，启用 `/vision/icp/target_cloud` 看框内观测点云，再启用 `/vision/icp/aligned_cloud` 对比通过阈值的配准模型。完整场景仍可通过 `/camera/camera/depth/color/points` 查看。当前 USB 2 相机配置为 640×480、6 FPS，处理速度以实际输出为准。权重 `assets/best.pt` 和矿网格 `assets/energy.stl` 均复制自 `engineer_2026/jetson`。环境、配置、话题和验证方法见 [vision_nodes 入门说明](ros2_ws/src/vision_nodes/README.md)。
 
 当前视觉主线是参考 `engineer_2026` 的 `jetson` 分支，先接通相机，再接 YOLO 检测与目标点云。此前的科技核心单目兑矿结构分析保留在 [北理 PnP 仓库结构解析](docs/bit_pnp_architecture.md)，不作为当前相机实验入口。
 
-## 七个包的职责
+新增独立的 C++／PCL 复现包 [vision_nodes_pcl](ros2_ws/src/vision_nodes_pcl/README.md)，配准参数、模型顶点采样、SOR→体素、ICP 及 Z 轴/六矿先验沿用 26 的 `target_detection`。相机、检测、画框、点云调试、Foxglove 和 RViz 均已接到同阶段入口；YOLO 复用当前 Python 检测节点。使用 `./build.sh --packages-select vision_nodes vision_nodes_pcl` 构建，`./run.sh mode:=vision_pcl use_rviz:=true` 启动。独立参数在 `vision_nodes_pcl/config/vision_params.yaml`，原 `mode:=vision` 和其配置保持不变；两种模式不能在同一域同时运行。PCL 默认使用复制自 26 的 `assets/energy.ply`，原点与 Python 使用的 STL 不同。
+
+## 各包的职责
 
 | 包 | 职责 | 运行节点或组件 |
 | --- | --- | --- |
@@ -27,8 +31,9 @@ cd /home/starbeloved/code/Robomaster/Engineer/Engineer_27
 | `sim_controller` | 模拟硬件 Xacro、ros2_control 配置、控制器、关节状态和 TF | `/controller_manager`、`arm_controller`、`joint_state_broadcaster`、`robot_state_publisher`、`world_to_base` |
 | `arm_visualization` | 默认 RViz 显示与可选 MoveIt 原生调试窗口 | 默认 `/rviz2`，可选 `/rviz_native` |
 | `vision_nodes` | D435、YOLO、框内点云与局部 ICP、独立画框与 Foxglove 接入 | `/camera/camera`、`/yolo_detector`、`/icp_registration`、`/main_visualizer`、`/foxglove_bridge` |
+| `vision_nodes_pcl` | 26 C++／PCL 配准及先验复现，与 Python 版同阶段的相机、检测和可视化 | 相同视觉节点名，另有 `/model_cloud_publisher`；与 `vision_nodes` 二选一启动 |
 
-每个功能包都有自己的 launch，加载所属 YAML；根目录 `run.sh` 直接在后台启动各包 launch、记录 PID，并在 Ctrl+C 或任一被监控的 launch 进程退出时统一停止系统。默认 `mode:=planning` 启动下图的机械臂系统；`mode:=vision` 只启动 `vision_nodes/vision_pipeline.launch.py`。启动列表只维护在 run.sh，没有总 launch 包。`arm_visualization` 只管理机械臂显示，不启动规划、控制器或坐标变换。
+每个功能包都有自己的 launch，加载所属 YAML；根目录 `run.sh` 直接在后台启动各包 launch、记录 PID，并在 Ctrl+C 或任一被监控的 launch 进程退出时统一停止系统。默认 `mode:=planning` 启动下图的机械臂系统；`mode:=vision` 启动 `vision_nodes/vision_pipeline.launch.py`，显式指定 `use_rviz:=true` 时再附加 `vision_nodes/vision_rviz.launch.py`。启动列表只维护在 run.sh，没有总 launch 包。`arm_visualization` 只管理机械臂显示，不启动规划、控制器或坐标变换。
 
 ```text
 run.sh

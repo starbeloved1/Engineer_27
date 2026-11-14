@@ -1,4 +1,4 @@
-"""订阅彩色原图运行 YOLO，只发布二维检测结果"""
+"""彩色图 → YOLO 或固定手动 ROI，只发布二维框，绘图仍交给 main_visualizer。"""
 import math
 from pathlib import Path
 import sys
@@ -10,7 +10,10 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import Image
+from std_srvs.srv import Trigger
 from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithPose
+
+from .manual_roi import ManualRoiSelector
 
 
 class YoloDetector(Node):
@@ -21,6 +24,8 @@ class YoloDetector(Node):
             "color_topic", "/camera/camera/color/image_raw").value
         self.detection_topic = self.declare_parameter(
             "detection_topic", "/vision/yolo/detections").value
+        self.use_manual_roi = self.declare_parameter("use_manual_roi", False).value
+        self.manual_roi = ManualRoiSelector()
         model_path = self.declare_parameter(
             "model_path", "assets/best.pt").value
         self.conf_thres = float(self.declare_parameter("conf_thres", 0.5).value)
@@ -38,15 +43,11 @@ class YoloDetector(Node):
             raise ValueError("imgsz 必须是 32 的正整数倍，log_every_n 不能为负数")
         if reliability not in ("reliable", "best_effort"):
             raise ValueError("input_reliability 必须是 reliable 或 best_effort")
-        if not model_path:
-            raise ValueError("model_path 不能为空")
         self.model_path = Path(model_path).expanduser().resolve()
-        if not self.model_path.is_file():
-            raise FileNotFoundError(f"YOLO 权重不存在: {self.model_path}")
-
-        # 依赖和模型加载失败时直接退出，不以空检测伪装成正常推理
-        from ultralytics import YOLO
-        self.model = YOLO(str(self.model_path), task="detect")
+        self.model = None
+        # 手动模式不加载权重或调用推理；首次恢复 YOLO 时才加载。
+        if not self.use_manual_roi:
+            self.load_model()
         self.bridge = CvBridge()
         self.frame_count = 0
         input_qos = QoSProfile(depth=1, reliability=(ReliabilityPolicy.RELIABLE
@@ -57,9 +58,64 @@ class YoloDetector(Node):
             Detection2DArray, self.detection_topic, result_qos)
         self.image_sub = self.create_subscription(
             Image, self.color_topic, self.image_callback, input_qos)
+        self.roi_window_timer = self.create_timer(1.0 / 30.0, self.poll_manual_roi)
+        self.roi_service = self.create_service(Trigger, '~/select_roi', self.select_roi)
         self.get_logger().info(
-            f"YOLO detector ready: model={self.model_path}, device={self.device}, "
-            f"classes={self.model.names}; {self.color_topic} -> {self.detection_topic}")
+            f"Detector ready: manual_roi={self.use_manual_roi}, model={self.model_path}, "
+            f"device={self.device}; {self.color_topic} -> {self.detection_topic}")
+
+    def load_model(self):
+        if self.model is None:
+            if not self.model_path.is_file():
+                raise FileNotFoundError(f"YOLO 权重不存在: {self.model_path}")
+            # 加载失败直接退出，不以空检测伪装成正常推理。
+            from ultralytics import YOLO
+            self.model = YOLO(str(self.model_path), task="detect")
+
+    def update_manual_mode(self):
+        enabled = self.get_parameter('use_manual_roi').value
+        if enabled != self.use_manual_roi:
+            self.use_manual_roi = enabled
+            if enabled:
+                self.manual_roi.reopen()
+            else:
+                self.manual_roi.close()
+            self.get_logger().info(f"检测模式切换为 {'手动 ROI' if enabled else 'YOLO'}")
+
+    def poll_manual_roi(self):
+        self.update_manual_mode()
+        if self.use_manual_roi:
+            previous = self.manual_roi.roi
+            self.manual_roi.poll()
+            if self.manual_roi.roi != previous:
+                self.get_logger().info(f"固定手动 ROI: {self.manual_roi.roi}，重新拖框后才替换")
+
+    def select_roi(self, request, response):
+        self.update_manual_mode()
+        response.success = self.use_manual_roi
+        if self.use_manual_roi:
+            self.manual_roi.reopen()
+            response.message = '已请求显示选框窗口；拖动完成前继续沿用旧 ROI'
+        else:
+            response.message = '请先设置 /yolo_detector 的 use_manual_roi=true'
+        return response
+
+    @staticmethod
+    def append_detection(detections, header, xyxy, class_id, confidence, manual=False):
+        x1, y1, x2, y2 = map(float, xyxy)
+        detection = Detection2D()
+        detection.header = header
+        detection.bbox.center.position.x = (x1 + x2) / 2.0
+        detection.bbox.center.position.y = (y1 + y2) / 2.0
+        detection.bbox.size_x = x2 - x1
+        detection.bbox.size_y = y2 - y1
+        if manual:
+            detection.id = 'manual_roi'
+        hypothesis = ObjectHypothesisWithPose()
+        hypothesis.hypothesis.class_id = class_id
+        hypothesis.hypothesis.score = float(confidence)
+        detection.results.append(hypothesis)
+        detections.detections.append(detection)
 
     def image_callback(self, message: Image):
         try:
@@ -69,27 +125,27 @@ class YoloDetector(Node):
             return
 
         start = time.perf_counter()
-        result = self.model.predict(
-            source=image, conf=self.conf_thres, iou=self.iou_thres,
-            device=self.device, imgsz=self.imgsz, verbose=False, save=False, show=False)[0]
+        self.update_manual_mode()
         detections = Detection2DArray()
         detections.header = message.header
-        if result.boxes is not None:
-            boxes = result.boxes.cpu()
-            for xyxy, confidence, class_id in zip(
-                    boxes.xyxy.numpy(), boxes.conf.numpy(), boxes.cls.numpy()):
-                x1, y1, x2, y2 = map(float, xyxy)
-                detection = Detection2D()
-                detection.header = message.header
-                detection.bbox.center.position.x = (x1 + x2) / 2.0
-                detection.bbox.center.position.y = (y1 + y2) / 2.0
-                detection.bbox.size_x = x2 - x1
-                detection.bbox.size_y = y2 - y1
-                hypothesis = ObjectHypothesisWithPose()
-                hypothesis.hypothesis.class_id = str(int(class_id))
-                hypothesis.hypothesis.score = float(confidence)
-                detection.results.append(hypothesis)
-                detections.detections.append(detection)
+        if self.use_manual_roi:
+            if self.manual_roi.update_image(image, message.header.frame_id):
+                self.get_logger().warning('彩色图尺寸或 frame_id 改变，手动 ROI 已失效，请重新拖框')
+            if self.manual_roi.roi is not None:
+                # 每帧重建消息与采集时间戳，框坐标保持不变，不伪装成目标跟踪。
+                self.append_detection(detections, message.header, self.manual_roi.roi,
+                                      'manual_roi', 1.0, manual=True)
+        else:
+            self.load_model()
+            result = self.model.predict(
+                source=image, conf=self.conf_thres, iou=self.iou_thres,
+                device=self.device, imgsz=self.imgsz, verbose=False, save=False, show=False)[0]
+            if result.boxes is not None:
+                boxes = result.boxes.cpu()
+                for xyxy, confidence, class_id in zip(
+                        boxes.xyxy.numpy(), boxes.conf.numpy(), boxes.cls.numpy()):
+                    self.append_detection(detections, message.header, xyxy,
+                                          str(int(class_id)), confidence)
 
         # 空数组明确表示这一帧没有检测到目标，时间戳仍是原图采集时刻
         self.detection_pub.publish(detections)
@@ -97,8 +153,13 @@ class YoloDetector(Node):
         if self.frame_count == 1 or (self.log_every_n and self.frame_count % self.log_every_n == 0):
             elapsed = (time.perf_counter() - start) * 1000
             self.get_logger().info(
-                f"YOLO: {elapsed:.1f} ms, {len(detections.detections)} detections, "
+                f"{'Manual ROI' if self.use_manual_roi else 'YOLO'}: {elapsed:.1f} ms, "
+                f"{len(detections.detections)} detections, "
                 f"input={message.width}x{message.height}")
+
+    def destroy_node(self):
+        self.manual_roi.close()
+        return super().destroy_node()
 
 
 def main(args=None):

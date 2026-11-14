@@ -7,6 +7,7 @@ import importlib.util
 from pathlib import Path
 import time
 import unittest
+from types import SimpleNamespace
 
 if importlib.util.find_spec('open3d') is None:
     raise unittest.SkipTest('ICP 测试需要 conda engineer 中的 Open3D')
@@ -37,6 +38,26 @@ MODEL = ROOT / 'assets/energy.stl'
 
 
 class GeometryTests(unittest.TestCase):
+    def test_zero_rmse_limit_disables_only_residual_gate(self):
+        result = SimpleNamespace(transformation=np.eye(4), fitness=.8,
+                                 inlier_rmse=.05, correspondence_set=range(100))
+        self.assertFalse(accepted_registration(result, .3, .03, 80))
+        self.assertTrue(accepted_registration(result, .3, 0., 80))
+        result.inlier_rmse = .03
+        self.assertTrue(accepted_registration(result, .3, .03, 80))
+        for value in (np.nan, np.inf):
+            result.inlier_rmse = value
+            self.assertFalse(accepted_registration(result, .3, 0., 80))
+        result.inlier_rmse = .05
+        result.fitness = .1
+        self.assertFalse(accepted_registration(result, .3, 0., 80))
+        result.fitness = .8
+        result.correspondence_set = range(20)
+        self.assertFalse(accepted_registration(result, .3, 0., 80))
+        result.correspondence_set = range(100)
+        result.transformation[0, 0] = np.nan
+        self.assertFalse(accepted_registration(result, .3, 0., 80))
+
     def test_projection_applies_extrinsic_and_rejects_invalid_depth(self):
         xyz = np.array([[-0.05, 0, 1], [0.1, 0, 1], [0, 0, -1],
                         [0, 0, 3], [np.nan, 0, 1], [0, 0, 0]])
@@ -69,10 +90,16 @@ class GeometryTests(unittest.TestCase):
         self.assertEqual(read_cloud(make_cloud(Header(), np.empty((0, 3))))[0].shape, (0, 3))
 
     def test_model_scale_origin_and_rigid_registration(self):
-        model = load_model(MODEL, .001, 3000, .005)
+        model = load_model(MODEL, .001, 2000, .005)
         points = np.asarray(model.points)
+        self.assertEqual(len(points), 2000)
         np.testing.assert_allclose(np.ptp(points, axis=0), [.095, .095, .150], atol=.003)
         self.assertGreater(points[:, 2].mean(), .05)  # 原点未被移到质心
+        # 0.005 的体素在源模型 mm 单位中应用。误当成 m 会合并大量采样点。
+        coarse_model = load_model(MODEL, .001, 2000, 10.)
+        self.assertLess(len(coarse_model.points), 1000)
+        np.testing.assert_allclose(np.ptp(np.asarray(coarse_model.points), axis=0),
+                                   [.095, .095, .150], atol=.012)
         rng = np.random.default_rng(27)
         xyz = rng.uniform(-1, 1, (1000, 3)) * [.07, .04, .1]
         source = filtered_cloud(xyz, None, 0., 0, 1.5)
@@ -88,6 +115,20 @@ class GeometryTests(unittest.TestCase):
         # 无对应点时 Open3D 的 RMSE 也可能为 0，不能据此误判成功。
         bad = o3d.pipelines.registration.RegistrationResult()
         self.assertFalse(accepted_registration(bad, .3, .015, 80))
+
+
+class ParameterTests(unittest.TestCase):
+    def test_zero_rmse_parameter_starts_node(self):
+        rclpy.init(args=['--ros-args', '-p', f'model_path:={MODEL}',
+                         '-p', 'max_inlier_rmse:=0'])
+        node = None
+        try:
+            node = IcpRegistration()
+            self.assertEqual(node.params['max_inlier_rmse'], 0.)
+        finally:
+            if node is not None:
+                node.destroy_node()
+            rclpy.shutdown()
 
 
 class PipelineTests(unittest.TestCase):

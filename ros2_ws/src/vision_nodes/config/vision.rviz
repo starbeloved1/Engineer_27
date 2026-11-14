@@ -1,0 +1,190 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+      Splitter Ratio: 0.5
+  - Class: rviz_common/Views
+    Name: Views
+    Expanded: []
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Camera
+      Name: Camera View
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /camera/camera/color/image_raw
+        Depth: 2
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Image Rendering: background
+      Overlay Alpha: 0.3
+      Zoom Factor: 1
+      Far Plane Distance: 3
+      Visibility:
+        Camera Axes: false
+        Value: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Target (green)
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /vision/icp/target_cloud
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Position Transformer: XYZ
+      Color Transformer: FlatColor
+      Color: 60; 255; 120
+      Alpha: 1
+      Style: Points
+      Size (Pixels): 3
+      Size (m): 0.003
+      Decay Time: 0
+      Selectable: true
+      Use Fixed Frame: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Aligned Model (red)
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /vision/icp/aligned_cloud
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Position Transformer: XYZ
+      Color Transformer: FlatColor
+      Color: 255; 70; 70
+      Alpha: 1
+      Style: Points
+      Size (Pixels): 2
+      Size (m): 0.002
+      Decay Time: 0
+      Selectable: true
+      Use Fixed Frame: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: ROI before filtering
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /vision/icp/roi_cloud
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Position Transformer: XYZ
+      Color Transformer: RGB8
+      Alpha: 1
+      Style: Points
+      Size (Pixels): 2
+      Size (m): 0.002
+      Decay Time: 0
+      Selectable: true
+      Use Fixed Frame: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Full Scene (RGB)
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /camera/camera/depth/color/points
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Position Transformer: XYZ
+      Color Transformer: RGB8
+      Alpha: 1
+      Style: Points
+      Size (Pixels): 2
+      Size (m): 0.002
+      Decay Time: 0
+      Selectable: true
+      Use Fixed Frame: true
+    - Class: rviz_default_plugins/Axes
+      Name: Camera Axes
+      Enabled: true
+      Value: true
+      Reference Frame: camera_link
+      Length: 0.08
+      Radius: 0.002
+  Enabled: true
+  Value: true
+  Global Options:
+    Fixed Frame: camera_link
+    Background Color: 35; 38; 44
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Name: Current View
+      Target Frame: camera_link
+      Focal Point: {X: 0.45, Y: 0.08, Z: 0}
+      Distance: 0.65
+      Yaw: 3.4
+      Pitch: 0.3
+      Near Clip Distance: 0.01
+      Value: Orbit (rviz_default_plugins)
+    Saved:
+      - Class: rviz_default_plugins/FPS
+        Name: 1 - Camera direction
+        Target Frame: camera_link
+        Position: {X: 0, Y: 0, Z: 0}
+        Yaw: 0
+        Pitch: 0
+        Near Clip Distance: 0.01
+        Value: FPS (rviz_default_plugins)
+      - Class: rviz_default_plugins/Orbit
+        Name: 2 - Side
+        Target Frame: camera_link
+        Focal Point: {X: 0.45, Y: 0, Z: 0}
+        Distance: 0.65
+        Yaw: 1.5708
+        Pitch: 0.15
+        Near Clip Distance: 0.01
+        Value: Orbit (rviz_default_plugins)
+      - Class: rviz_default_plugins/Orbit
+        Name: 3 - Top
+        Target Frame: camera_link
+        Focal Point: {X: 0.45, Y: 0, Z: 0}
+        Distance: 0.75
+        Yaw: 0
+        Pitch: 1.5698
+        Near Clip Distance: 0.01
+        Value: Orbit (rviz_default_plugins)
+      - Class: rviz_default_plugins/Orbit
+        Name: 4 - Overview
+        Target Frame: camera_link
+        Focal Point: {X: 0.45, Y: 0, Z: 0}
+        Distance: 0.8
+        Yaw: 3.4
+        Pitch: 0.3
+        Near Clip Distance: 0.01
+        Value: Orbit (rviz_default_plugins)
+Window Geometry:
+  QMainWindow State: 000000ff00000000fd000000020000000000000118000003e8fc0200000002fb000000100044006900730070006c0061007900730100000000000002010000001700fffffffb0000000a005600690065007700730100000207000001e10000001700ffffff00000001000002f8000003e8fc0200000001fb0000001600430061006d006500720061002000560069006500770100000000000003e80000001700ffffff00000288000003e800000004000000040000000800000008fc00000000
+  Width: 1700
+  Height: 1000
+  X: 60
+  Y: 60
+  Hide Left Dock: false
+  Hide Right Dock: false
+  Displays:
+    collapsed: false
+  Views:
+    collapsed: false
+  Camera View:
+    collapsed: false

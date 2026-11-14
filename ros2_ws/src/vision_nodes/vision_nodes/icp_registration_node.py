@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose, PoseArray
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 import numpy as np
 import rclpy
+from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
@@ -36,7 +37,7 @@ class IcpRegistration(Node):
             'aligned_cloud_topic': '/vision/icp/aligned_cloud',
             'pose_topic': '/vision/icp/object_poses',
             'model_path': 'assets/energy.stl', 'model_scale': 0.001,
-            'model_frame': 'energy_model', 'sample_points': 3000,
+            'model_frame': 'energy_model', 'sample_points': 2000, 'model_voxel_size': 0.005,
             'voxel_size': 0.005, 'min_depth': 0.2, 'max_depth': 2.0,
             'bbox_shrink_ratio': 0.0, 'min_points': 80,
             'sor_neighbors': 20, 'sor_std_ratio': 1.5,
@@ -46,14 +47,24 @@ class IcpRegistration(Node):
             'sync_queue_size': 30, 'sync_slop': 0.05,
             'max_data_age': 1.5, 'input_reliability': 'reliable', 'log_every_n': 10,
         }
-        self.params = {name: self.declare_parameter(name, value).value
-                       for name, value in defaults.items()}
+        # YAML 中的 0 是整数，允许该参数同时接受整数 0 和浮点 0.0。
+        self.params = {}
+        for name, value in defaults.items():
+            if name == 'max_inlier_rmse':
+                parameter = self.declare_parameter(
+                    name, value, ParameterDescriptor(dynamic_typing=True))
+            else:
+                parameter = self.declare_parameter(name, value)
+            self.params[name] = parameter.value
         p = self.params
-        for name in ('model_scale', 'max_depth', 'max_corr_dist', 'max_inlier_rmse',
+        if (isinstance(p['max_inlier_rmse'], bool)
+                or not isinstance(p['max_inlier_rmse'], (int, float))):
+            raise ValueError('max_inlier_rmse 必须为有限非负数，0 禁用残差上限')
+        for name in ('model_scale', 'max_depth', 'max_corr_dist',
                      'sor_std_ratio', 'sync_slop', 'max_data_age'):
             if not math.isfinite(p[name]) or p[name] <= 0:
                 raise ValueError(f'{name} 必须为有限正数')
-        for name in ('voxel_size', 'min_depth'):
+        for name in ('model_voxel_size', 'voxel_size', 'min_depth', 'max_inlier_rmse'):
             if not math.isfinite(p[name]) or p[name] < 0:
                 raise ValueError(f'{name} 必须为有限非负数')
         if (p['min_depth'] >= p['max_depth']
@@ -81,9 +92,9 @@ class IcpRegistration(Node):
             raise ValueError('输出话题必须互不相同，且不能与输入话题相同')
 
         self.source = load_model(p['model_path'], p['model_scale'], p['sample_points'],
-                                 p['voxel_size'])
+                                 p['model_voxel_size'])
         if len(self.source.points) < p['min_points']:
-            raise ValueError('模型下采样后点数不足，请检查单位和 voxel_size')
+            raise ValueError('模型下采样后点数不足，请检查单位和 model_voxel_size')
         self.source_xyz = np.asarray(self.source.points)
         self.camera_info = None
         self.last_stamp_ns = -1
@@ -120,6 +131,8 @@ class IcpRegistration(Node):
         self.watchdog = self.create_timer(0.25, self.clear_stale)
         self.get_logger().info(
             f"ICP ready: model={p['model_path']}, scale={p['model_scale']}, "
+            f"sampling=poisson_disk, sample_points={p['sample_points']}, "
+            f"model_voxel_size={p['model_voxel_size']} (源模型单位), "
             f"points={len(self.source_xyz)}, extent_m={np.ptp(self.source_xyz, axis=0)}; "
             f"sync_slop={p['sync_slop']}s; 局部配准，尚未验证实物位姿精度")
 

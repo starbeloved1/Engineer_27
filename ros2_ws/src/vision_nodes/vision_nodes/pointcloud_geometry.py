@@ -1,4 +1,4 @@
-"""框内筛选、模型采样与局部 ICP；坐标、距离统一为米。"""
+"""框内筛选、模型采样与局部 ICP；运行点云单位为米。"""
 from pathlib import Path
 
 import cv2
@@ -7,20 +7,25 @@ import open3d as o3d
 from scipy.spatial.transform import Rotation
 
 
-def load_model(path, scale, sample_points, voxel_size):
+def load_model(path, scale, sample_points, model_voxel_size):
     path = Path(path).expanduser().resolve()
     if not path.is_file():
         raise FileNotFoundError(f"矿模型不存在: {path}")
     mesh = o3d.io.read_triangle_mesh(str(path))
     if mesh.is_empty() or not mesh.has_triangles():
         raise ValueError(f"模型不是有效三角网格: {path}")
-    # 保留原模型原点和轴向；先转换单位，再按米做体素下采样。
-    mesh.scale(scale, center=np.zeros(3))
     if not np.isfinite(np.asarray(mesh.vertices)).all():
         raise ValueError("模型包含非有限坐标")
+    # 对齐 26 Python：在源模型单位中泊松盘采样、体素过滤，最后转为米。
+    # energy.stl 使用 mm，因此 model_voxel_size=0.005 是 0.005 mm，不是 5 mm。
+    # 固定种子便于离线对比；保留模型原点和轴向。
     o3d.utility.random.seed(27)
-    cloud = mesh.sample_points_uniformly(number_of_points=sample_points)
-    return cloud.voxel_down_sample(voxel_size) if voxel_size > 0 else cloud
+    cloud = mesh.sample_points_poisson_disk(number_of_points=sample_points)
+    if model_voxel_size > 0:
+        cloud = cloud.voxel_down_sample(model_voxel_size)
+    points = np.asarray(cloud.points, dtype=np.float32) * scale
+    cloud.points = o3d.utility.Vector3dVector(points)
+    return cloud
 
 
 def roi_mask(xyz, camera_matrix, distortion, cloud_to_color, bbox,
@@ -84,8 +89,9 @@ def register_model(source, target, initial_rpy_deg, max_corr_dist, max_iteration
 
 
 def accepted_registration(result, min_fitness, max_rmse, min_correspondences):
+    # 0 只禁用 RMSE 上限，仍拒绝非有限结果和不足的有效匹配。
     return (np.isfinite(result.transformation).all()
             and np.isfinite(result.inlier_rmse)
             and result.fitness >= min_fitness
-            and result.inlier_rmse <= max_rmse
+            and (max_rmse == 0 or result.inlier_rmse <= max_rmse)
             and len(result.correspondence_set) >= min_correspondences)

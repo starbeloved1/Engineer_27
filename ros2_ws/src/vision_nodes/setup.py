@@ -13,6 +13,7 @@ setup(
                               'requirements-icp.txt']),
         ('share/vision_nodes/launch', glob('launch/*.launch.py')),
         ('share/vision_nodes/config', glob('config/*.yaml')),
+        ('share/vision_nodes/config', glob('config/*.rviz')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

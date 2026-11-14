@@ -1,0 +1,20 @@
+# 由 RealSense ROS 2 C++ 驱动读取；当前 USB 2 链路先用已验证的低带宽组合。
+/camera/camera:
+  ros__parameters:
+    enable_color: true
+    enable_depth: true
+    enable_infra: false
+    enable_infra1: false
+    enable_infra2: false
+    rgb_camera.color_profile: '640x480x6'
+    rgb_camera.color_format: 'RGB8'
+    depth_module.depth_profile: '640x480x6'
+    depth_module.depth_format: 'Z16'
+    enable_sync: true
+    align_depth.enable: true
+    pointcloud.enable: true
+    pointcloud.stream_filter: 2 # RS2_STREAM_COLOR，为点云提供 RGB 纹理
+    pointcloud.stream_index_filter: 0
+    pointcloud.allow_no_texture_points: false
+    pointcloud.ordered_pc: false
+    publish_tf: true

@@ -9,4 +9,17 @@
 
 `/vision/model_cloud` 是网格表面采样，位于 `energy_model` 坐标系。该坐标系没有到相机的固定 TF。只有 ICP 通过阈值后，才将模型变换到观测点云坐标系，并发布 `/vision/icp/aligned_cloud` 与 `/vision/icp/object_poses`。
 
+模型点云生成对齐 26 Python：原网格泊松盘采样 2000 点 → 在 mm 单位中按 `model_voxel_size=0.005` 过滤 → 转 float32 → 乘 `0.001` 转为米。保留固定随机种子用于可重复比较。模型体素的 0.005 mm 与观测云体素 `voxel_size` 的单位 m 不同。
+
 输出位姿描述模型原点，不是物体可见点质心，也不是夹爪 TCP。初始朝向、局部极值、遮挡和几何对称均可能造成错误配准；拟合残差不是实物定位精度。
+
+## PCL 复现使用的 PLY
+
+`vision_nodes_pcl` 另使用 `assets/energy.ply`，逐字节复制自 `engineer_2026/jetson/assets/energy.ply`。
+默认按毫米解释并乘 `0.001` 转米，保留其坐标原点与轴向。
+SHA-256：`d679b7ca1bb00719eb290fc27475b6959ac938a8acd3fc8ef75425dec5fcd737`。
+它含 1124 个原始点；按 26 C++ 流程读取顶点、随机限点最多 5000、5 mm 体素，ICP 接收后再做 6 mm 体素。
+不是将 STL 做泊松盘采样所得。PLY 原始 Z 范围约 `[-70.665, 79.443] mm`，与 STL 的
+`[-0.089, 149.989] mm` 不同，因此两套结果的平移不能直接相减当作算法误差。
+原模型仍标记为 `energy_model`；只有配准后的模型可以放进相机/机器人坐标系。
+新包还保留 26 的 Z 轴和六矿布局修正，提供原始 ICP 与最终修正后的两套模型/位姿供观察，详见包 README。

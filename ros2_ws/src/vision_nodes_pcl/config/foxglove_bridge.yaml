@@ -1,0 +1,12 @@
+foxglove_bridge:
+  ros__parameters:
+    address: 127.0.0.1
+    port: 8765
+    # 仅向显示端提供相机、视觉输出和相机坐标变换
+    topic_whitelist:
+      - ^/camera/.*
+      - ^/vision/.*
+      - ^/tf$
+      - ^/tf_static$
+    min_qos_depth: 1
+    max_qos_depth: 1

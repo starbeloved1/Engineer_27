@@ -5,21 +5,24 @@ engineer_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<'HELP'
-用法：./run.sh [mode:=planning|vision] [use_rviz:=true|false]
+用法：./run.sh [mode:=planning|vision|vision_pcl] [use_rviz:=true|false]
                [start_planner:=true|false] [start_goal:=true|false]
                [controller_config:=FILE] [planner_config:=FILE] [goal_config:=FILE]
                [start_camera:=true|false] [start_detector:=true|false] [start_icp:=true|false] [start_bridge:=true|false]
                [camera_config:=FILE] [vision_config:=FILE] [foxglove_config:=FILE]
-               [yolo_python:=FILE] [icp_python:=FILE]
+               [yolo_python:=FILE] [icp_python:=FILE（仅 vision）]
 默认 planning：启动模拟控制、MoveIt、规划服务、Topic 客户端和 RViz。
 vision：启动 D435、YOLO、框内点云与 ICP、main_visualizer 和 Foxglove Bridge；请先关闭 RealSense Viewer。
-Foxglove 连接 ws://127.0.0.1:8765，use_rviz 参数仅用于 planning 模式。
+vision_pcl：相同入口与显示能力，配准及先验复刻 26 C++／PCL，使用 vision_nodes_pcl 的独立配置。
+Foxglove 连接 ws://127.0.0.1:8765；vision / vision_pcl 加 use_rviz:=true 打开相机视角 RViz，默认不打开。
+已有视觉流程时可单独执行 ros2 launch vision_nodes vision_rviz.launch.py，仅打开显示窗口；PCL 模式将包名改为 vision_nodes_pcl。
 各包 launch 独立加载默认 YAML，配置路径参数仅用于显式覆盖；Ctrl+C 统一退出。
 HELP
 }
 
 mode=planning
 use_rviz=true
+vision_use_rviz=false
 start_planner=true
 start_goal=true
 controller_arguments=()
@@ -29,8 +32,10 @@ vision_arguments=()
 for argument in "$@"; do
   case "$argument" in
     -h|--help) usage; exit 0 ;;
-    mode:=planning|mode:=vision) mode="${argument#*:=}" ;;
-    use_rviz:=true|use_rviz:=false) use_rviz="${argument#*:=}" ;;
+    mode:=planning|mode:=vision|mode:=vision_pcl) mode="${argument#*:=}" ;;
+    use_rviz:=true|use_rviz:=false)
+      use_rviz="${argument#*:=}"
+      vision_use_rviz="$use_rviz" ;;
     start_planner:=true|start_planner:=false) start_planner="${argument#*:=}" ;;
     start_goal:=true|start_goal:=false) start_goal="${argument#*:=}" ;;
     start_camera:=true|start_camera:=false|start_bridge:=true|start_bridge:=false|start_detector:=true|start_detector:=false|start_icp:=true|start_icp:=false)
@@ -44,8 +49,8 @@ for argument in "$@"; do
 done
 
 # 同一工作区、同一 ROS 域只允许一套视觉流程，提前阻止相机和端口争用
-if [[ "$mode" == vision ]]; then
-  # 视觉 YAML 中的相对权重路径统一以 Engineer_27 根目录为基准
+if [[ "$mode" == vision || "$mode" == vision_pcl ]]; then
+  # 统一视觉启动目录；各包自行解析其配置中的资产路径
   cd "$engineer_root"
   mkdir -p "$engineer_root/.cache"
   exec {vision_lock_fd}>"$engineer_root/.cache/vision_${ROS_DOMAIN_ID:-0}.lock"
@@ -122,8 +127,15 @@ start_launch() {
 }
 
 # 各模式的启动列表只在这里维护，不把视觉实验混入默认机械臂系统。
-if [[ "$mode" == vision ]]; then
-  start_launch vision_nodes vision_pipeline.launch.py "${vision_arguments[@]}"
+if [[ "$mode" == vision || "$mode" == vision_pcl ]]; then
+  vision_package=vision_nodes
+  if [[ "$mode" == vision_pcl ]]; then
+    vision_package=vision_nodes_pcl
+  fi
+  start_launch "$vision_package" vision_pipeline.launch.py "${vision_arguments[@]}"
+  if [[ "$vision_use_rviz" == true ]]; then
+    start_launch "$vision_package" vision_rviz.launch.py
+  fi
 else
   start_launch sim_controller sim_controller.launch.py "${controller_arguments[@]}"
   start_launch moveit_config moveit.launch.py
