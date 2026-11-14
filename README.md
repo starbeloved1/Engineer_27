@@ -1,6 +1,6 @@
 # Engineer 27：机械臂规划与取矿视觉
 
-机械臂部分使用现有模型，完成关节目标和末端位姿目标规划、碰撞检查、轨迹预览及模拟执行；规划业务和目标客户端为 C++。取矿视觉已接入 D435 彩色图、深度和场景点云，`vision_nodes/yolo_detector` 运行 26 权重并发布二维检测框，独立的 `main_visualizer` 负责同帧画框，由 Foxglove 显示。真实控制接口、TCP 标定和实际机械限位尚未接入。
+机械臂部分使用现有模型，完成关节目标和末端位姿目标规划、碰撞检查、轨迹预览及模拟执行；规划业务和目标客户端为 C++。取矿视觉已接入 D435、YOLO、框内点云提取和矿模型局部 ICP，独立的 `main_visualizer` 负责同帧画框，由 Foxglove 显示。ICP 已通过合成数据回验，实物配准效果尚待确认。真实控制接口、TCP 标定和实际机械限位尚未接入。
 
 ## 先运行相机与点云
 
@@ -12,7 +12,7 @@ cd /home/starbeloved/code/Robomaster/Engineer/Engineer_27
 ./run.sh mode:=vision
 ```
 
-在 Foxglove 中通过 Foxglove WebSocket 连接 `ws://127.0.0.1:8765`：Image 面板选择 `/vision/visualization/image` 看检测框，3D 面板选择 `camera_link` 并启用 `/camera/camera/depth/color/points`。当前 USB 2 相机配置为 640×480、6 FPS，检测显示速度以实际推理输出为准。默认使用本项目的 `assets/best.pt`，权重来源为 `engineer_2026/jetson`；尚未提取目标点云或运行 ICP。环境、配置、话题和验证方法见 [vision_nodes 入门说明](ros2_ws/src/vision_nodes/README.md)。
+在 Foxglove 中通过 Foxglove WebSocket 连接 `ws://127.0.0.1:8765`：Image 面板选择 `/vision/visualization/image` 看检测框，3D 面板选择 `camera_link`，启用 `/vision/icp/target_cloud` 看框内观测点云，再启用 `/vision/icp/aligned_cloud` 对比通过阈值的配准模型。完整场景仍可通过 `/camera/camera/depth/color/points` 查看。当前 USB 2 相机配置为 640×480、6 FPS，处理速度以实际输出为准。权重 `assets/best.pt` 和矿网格 `assets/energy.stl` 均复制自 `engineer_2026/jetson`。环境、配置、话题和验证方法见 [vision_nodes 入门说明](ros2_ws/src/vision_nodes/README.md)。
 
 当前视觉主线是参考 `engineer_2026` 的 `jetson` 分支，先接通相机，再接 YOLO 检测与目标点云。此前的科技核心单目兑矿结构分析保留在 [北理 PnP 仓库结构解析](docs/bit_pnp_architecture.md)，不作为当前相机实验入口。
 
@@ -26,7 +26,7 @@ cd /home/starbeloved/code/Robomaster/Engineer/Engineer_27
 | `moveit_config` | 纯机器人模型、SRDF、KDL、OMPL、MoveIt 执行端映射 | launch 启动 `/move_group` |
 | `sim_controller` | 模拟硬件 Xacro、ros2_control 配置、控制器、关节状态和 TF | `/controller_manager`、`arm_controller`、`joint_state_broadcaster`、`robot_state_publisher`、`world_to_base` |
 | `arm_visualization` | 默认 RViz 显示与可选 MoveIt 原生调试窗口 | 默认 `/rviz2`，可选 `/rviz_native` |
-| `vision_nodes` | D435、YOLO 检测、独立画框与 Foxglove 接入 | `/camera/camera`、`/yolo_detector`、`/main_visualizer`、`/foxglove_bridge` |
+| `vision_nodes` | D435、YOLO、框内点云与局部 ICP、独立画框与 Foxglove 接入 | `/camera/camera`、`/yolo_detector`、`/icp_registration`、`/main_visualizer`、`/foxglove_bridge` |
 
 每个功能包都有自己的 launch，加载所属 YAML；根目录 `run.sh` 直接在后台启动各包 launch、记录 PID，并在 Ctrl+C 或任一被监控的 launch 进程退出时统一停止系统。默认 `mode:=planning` 启动下图的机械臂系统；`mode:=vision` 只启动 `vision_nodes/vision_pipeline.launch.py`。启动列表只维护在 run.sh，没有总 launch 包。`arm_visualization` 只管理机械臂显示，不启动规划、控制器或坐标变换。
 
@@ -41,7 +41,7 @@ run.sh
 
 `assets/arm.urdf` 与 `assets/meshes/{visual,collision}` 是模型的唯一来源。构建时配置包生成安装用 URDF，仅将网格相对路径改为 `package://moveit_config/...`；不修改源 URDF，不安装 `assets/source` 归档。没有独立 description 包。
 
-离线网格处理工具仍放在 `scripts/`，其 Conda 环境由 `environment.yml` 管理。机械臂和基础 ROS 节点使用系统 Humble；YOLO 单独使用 Conda `engineer` 的 Python，不需要在终端激活环境。
+离线网格处理工具仍放在 `scripts/`，其 Conda 环境由 `environment.yml` 管理。机械臂和基础 ROS 节点使用系统 Humble；YOLO 与 Open3D ICP 单独使用 Conda `engineer` 的 Python，不需要在终端激活环境。
 
 ## 构建和启动
 

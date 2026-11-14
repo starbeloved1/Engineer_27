@@ -19,3 +19,35 @@ main_visualizer:
     sync_queue_size: 30 # 缓存原图等待同一采集时间戳的检测结果
     visualization_rate_hz: 0.0 # 0 表示跟随相机，正数表示调试图最大发布频率
     input_reliability: reliable # 本机大图像实测使用可靠传输；回放可改为 best_effort
+
+icp_registration:
+  ros__parameters:
+    pointcloud_topic: /camera/camera/depth/color/points # sub，坐标以消息 header 为准
+    camera_info_topic: /camera/camera/color/camera_info # sub，原始彩色图内参
+    detection_topic: /vision/yolo/detections # sub
+    source_cloud_topic: /vision/model_cloud # pub，原模型坐标系，仅供单独查看
+    roi_cloud_topic: /vision/icp/roi_cloud # pub，框内距离筛选后、体素/SOR 之前，保留 RGB
+    target_cloud_topic: /vision/icp/target_cloud # pub，框内过滤后的观测云，保留 RGB
+    aligned_cloud_topic: /vision/icp/aligned_cloud # pub，通过阈值的模型叠合云
+    pose_topic: /vision/icp/object_poses # pub，PoseArray，当前帧有效结果，无稳定 ID
+    model_path: assets/energy.stl # 复制自 engineer_2026/assets，保留原点及轴向
+    model_scale: 0.001 # 源模型 mm → ROS m
+    model_frame: energy_model # 原模型自己的坐标系，不连接相机 TF
+    sample_points: 3000
+    voxel_size: 0.005 # m，模型及目标统一下采样；0 禁用
+    min_depth: 0.2 # m，转换到彩色光学系后的 Z 深度
+    max_depth: 2.0 # m，排除过远背景
+    bbox_shrink_ratio: 0.0 # [0,1)，0 使用完整框；背景多时可试 0.1
+    min_points: 80 # 目标点及有效匹配对的下限
+    sor_neighbors: 20 # 统计离群点过滤，0 禁用
+    sor_std_ratio: 1.5
+    max_corr_dist: 0.15 # m，ICP 最大配准距离
+    max_icp_iter: 100
+    fitness_threshold: 0.3 # Open3D 匹配比例，不是 YOLO 置信度
+    max_inlier_rmse: 0.015 # m，拟合残差阈值，不代表真实位姿精度
+    initial_rpy_deg: [0.0, 0.0, 0.0] # 模型在点云坐标系中的初始旋转，xyz 欧拉角，度
+    sync_queue_size: 30 # 缓存点云等待 YOLO 结果
+    sync_slop: 0.05 # s，彩色检测与深度云采集时间差上限
+    max_data_age: 1.5 # s，拒绝旧数据；断流后清空输出
+    input_reliability: reliable
+    log_every_n: 10

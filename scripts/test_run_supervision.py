@@ -93,7 +93,7 @@ class RunSupervision(unittest.TestCase):
 
     def test_invalid_argument_does_not_start_system(self):
         for argument in ['use_rviz:=invalid', 'mode:=invalid', 'start_camera:=invalid',
-                         'start_bridge:=invalid', 'start_detector:=invalid']:
+                         'start_bridge:=invalid', 'start_detector:=invalid', 'start_icp:=invalid']:
             with self.subTest(argument=argument):
                 result = subprocess.run([str(ROOT / 'run.sh'), argument], cwd=ROOT,
                                         capture_output=True, text=True, timeout=5)
