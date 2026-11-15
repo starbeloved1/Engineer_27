@@ -5,17 +5,17 @@ engineer_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<'HELP'
-用法：./run.sh [mode:=planning|vision|vision_pcl] [use_rviz:=true|false]
+用法：./run.sh [mode:=planning|vision] [use_rviz:=true|false]
                [start_planner:=true|false] [start_goal:=true|false]
                [controller_config:=FILE] [planner_config:=FILE] [goal_config:=FILE]
                [start_camera:=true|false] [start_detector:=true|false] [start_icp:=true|false] [start_bridge:=true|false]
                [camera_config:=FILE] [vision_config:=FILE] [foxglove_config:=FILE]
-               [yolo_python:=FILE] [icp_python:=FILE（仅 vision）]
+               [yolo_python:=FILE]
 默认 planning：启动模拟控制、MoveIt、规划服务、Topic 客户端和 RViz。
-vision：启动 D435、YOLO、框内点云与 ICP、main_visualizer 和 Foxglove Bridge；请先关闭 RealSense Viewer。
-vision_pcl：相同入口与显示能力，配准及先验复刻 26 C++／PCL，使用 vision_nodes_pcl 的独立配置。
-Foxglove 连接 ws://127.0.0.1:8765；vision / vision_pcl 加 use_rviz:=true 打开相机视角 RViz，默认不打开。
-已有视觉流程时可单独执行 ros2 launch vision_nodes vision_rviz.launch.py，仅打开显示窗口；PCL 模式将包名改为 vision_nodes_pcl。
+vision：启动 vision_nodes 分组下的 D435、YOLO/叠框图像、PCL ICP、Bridge 和录像；请先关闭 RealSense Viewer。
+vision_pcl：保留为 vision 的兼容别名；各节点加载各自包内的 config。
+Foxglove 连接 ws://127.0.0.1:8765；vision 加 use_rviz:=true 打开相机视角 RViz，默认不打开。
+已有视觉流程时可单独执行 ros2 launch camera_driver vision_rviz.launch.py，仅打开显示窗口。
 各包 launch 独立加载默认 YAML，配置路径参数仅用于显式覆盖；Ctrl+C 统一退出。
 HELP
 }
@@ -28,28 +28,46 @@ start_goal=true
 controller_arguments=()
 planner_arguments=()
 goal_arguments=()
-vision_arguments=()
+start_camera=true
+start_detector=true
+start_icp=true
+start_bridge=true
+camera_arguments=()
+detector_arguments=()
+model_arguments=()
+icp_arguments=()
+bridge_arguments=()
+recorder_arguments=()
 for argument in "$@"; do
   case "$argument" in
     -h|--help) usage; exit 0 ;;
-    mode:=planning|mode:=vision|mode:=vision_pcl) mode="${argument#*:=}" ;;
+    mode:=planning|mode:=vision) mode="${argument#*:=}" ;;
+    mode:=vision_pcl) mode=vision ;;
     use_rviz:=true|use_rviz:=false)
       use_rviz="${argument#*:=}"
       vision_use_rviz="$use_rviz" ;;
     start_planner:=true|start_planner:=false) start_planner="${argument#*:=}" ;;
     start_goal:=true|start_goal:=false) start_goal="${argument#*:=}" ;;
-    start_camera:=true|start_camera:=false|start_bridge:=true|start_bridge:=false|start_detector:=true|start_detector:=false|start_icp:=true|start_icp:=false)
-      vision_arguments+=("$argument") ;;
+    start_camera:=true|start_camera:=false) start_camera="${argument#*:=}" ;;
+    start_detector:=true|start_detector:=false) start_detector="${argument#*:=}" ;;
+    start_icp:=true|start_icp:=false) start_icp="${argument#*:=}" ;;
+    start_bridge:=true|start_bridge:=false) start_bridge="${argument#*:=}" ;;
     controller_config:=?*) controller_arguments=("$argument") ;;
     planner_config:=?*) planner_arguments=("$argument") ;;
     goal_config:=?*) goal_arguments=("$argument") ;;
-    camera_config:=?*|vision_config:=?*|foxglove_config:=?*|yolo_python:=?*|icp_python:=?*) vision_arguments+=("$argument") ;;
+    camera_config:=?*) camera_arguments+=("$argument"); recorder_arguments+=("$argument") ;;
+    vision_config:=?*)
+      detector_arguments+=("$argument")
+      model_arguments+=("$argument")
+      icp_arguments+=("$argument") ;;
+    foxglove_config:=?*) bridge_arguments+=("$argument") ;;
+    yolo_python:=?*) detector_arguments+=("$argument") ;;
     *) echo "未知或无效参数：$argument" >&2; usage >&2; exit 2 ;;
   esac
 done
 
 # 同一工作区、同一 ROS 域只允许一套视觉流程，提前阻止相机和端口争用
-if [[ "$mode" == vision || "$mode" == vision_pcl ]]; then
+if [[ "$mode" == vision ]]; then
   # 统一视觉启动目录；各包自行解析其配置中的资产路径
   cd "$engineer_root"
   mkdir -p "$engineer_root/.cache"
@@ -127,14 +145,23 @@ start_launch() {
 }
 
 # 各模式的启动列表只在这里维护，不把视觉实验混入默认机械臂系统。
-if [[ "$mode" == vision || "$mode" == vision_pcl ]]; then
-  vision_package=vision_nodes
-  if [[ "$mode" == vision_pcl ]]; then
-    vision_package=vision_nodes_pcl
+if [[ "$mode" == vision ]]; then
+  if [[ "$start_camera" == true ]]; then
+    start_launch camera_driver camera_driver.launch.py "${camera_arguments[@]}"
   fi
-  start_launch "$vision_package" vision_pipeline.launch.py "${vision_arguments[@]}"
+  if [[ "$start_detector" == true ]]; then
+    start_launch yolo_detector yolo_detector.launch.py "${detector_arguments[@]}"
+    if [[ "$start_icp" == true ]]; then
+      start_launch model_cloud_publisher model_cloud_publisher.launch.py "${model_arguments[@]}"
+      start_launch icp_registration icp_registration.launch.py "${icp_arguments[@]}"
+    fi
+  fi
+  if [[ "$start_bridge" == true ]]; then
+    start_launch camera_driver foxglove_bridge.launch.py "${bridge_arguments[@]}"
+  fi
+  start_launch video_recorder video_recorder.launch.py "${recorder_arguments[@]}"
   if [[ "$vision_use_rviz" == true ]]; then
-    start_launch "$vision_package" vision_rviz.launch.py
+    start_launch camera_driver vision_rviz.launch.py
   fi
 else
   start_launch sim_controller sim_controller.launch.py "${controller_arguments[@]}"

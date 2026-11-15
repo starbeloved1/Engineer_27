@@ -1,24 +1,37 @@
 # Engineer 27：机械臂规划与取矿视觉
 
-机械臂部分使用现有模型，完成关节目标和末端位姿目标规划、碰撞检查、轨迹预览及模拟执行；规划业务和目标客户端为 C++。取矿视觉已接入 D435、YOLO、框内点云提取和矿模型局部 ICP，独立的 `main_visualizer` 负责同帧画框，由 Foxglove 显示。ICP 已通过合成数据回验，实物配准效果尚待确认。真实控制接口、TCP 标定和实际机械限位尚未接入。
+机械臂已实现离线规划、碰撞检查、轨迹预览与模拟执行。取矿视觉统一使用 PCL，接入 D435、
+YOLO/固定手动 ROI、框内点云、ICP、位姿后处理及 Foxglove/RViz 显示。真实定位精度尚待验证，
+视觉结果未接机械臂，真实控制接口及 TCP 标定尚未完成。
 
 ## 先运行相机与点云
 
-关闭 RealSense Viewer，在未激活 Conda 的系统终端中运行：
+关闭占用相机的 RealSense Viewer 或旧流程，在未激活 Conda 的系统终端运行：
 
 ```bash
 cd /home/starbeloved/code/Robomaster/Engineer/Engineer_27
-./build.sh --packages-select vision_nodes
-./run.sh mode:=vision
+./build.sh
+./run.sh mode:=vision use_rviz:=true
 ```
 
-需要固定相机视角的 RViz 时，使用 `./run.sh mode:=vision use_rviz:=true`。如果视觉流程已经运行，在另一个终端 `source ros2_ws/install/setup.bash` 后执行 `ros2 launch vision_nodes vision_rviz.launch.py`，仅附加显示窗口。右侧 Camera View 固定相机视角，绿色为观测点、红色为通过验收的模型；左下 Views 可恢复三维观察方向。详见 [RViz 观察说明](ros2_ws/src/vision_nodes/README.md#rviz-相机视角查看)。
+`vision_nodes/` 按 heros 的 `hero_aim/` 组织为功能分组：各节点独立成 ROS 包，
+各自拥有构建文件、配置和 launch，共用计算导出为 `vision_core`。
+`run.sh mode:=vision` 分别启动这些包；`mode:=vision_pcl` 保留为兼容别名。
 
-在 Foxglove 中通过 Foxglove WebSocket 连接 `ws://127.0.0.1:8765`：Image 面板选择 `/vision/visualization/image` 看检测框，3D 面板选择 `camera_link`，启用 `/vision/icp/target_cloud` 看框内观测点云，再启用 `/vision/icp/aligned_cloud` 对比通过阈值的配准模型。完整场景仍可通过 `/camera/camera/depth/color/points` 查看。当前 USB 2 相机配置为 640×480、6 FPS，处理速度以实际输出为准。权重 `assets/best.pt` 和矿网格 `assets/energy.stl` 均复制自 `engineer_2026/jetson`。环境、配置、话题和验证方法见 [vision_nodes 入门说明](ros2_ws/src/vision_nodes/README.md)。
+相机使用 USB 3：彩色 1280×720、深度 848×480，均请求 30 FPS，算法实际处理频率另计。
+权重 `assets/best.pt` 和 PCL 模型 `assets/energy.ply` 复制自 `engineer_2026/jetson`。
+手动 ROI 开关在 `yolo_detector/config/yolo_detector.yaml`，RGB 原图录像开关在
+`camera_driver/config/camera.yaml`，视频保存到 `video/`；路径均相对于视觉分组目录。
 
-当前视觉主线是参考 `engineer_2026` 的 `jetson` 分支，先接通相机，再接 YOLO 检测与目标点云。此前的科技核心单目兑矿结构分析保留在 [北理 PnP 仓库结构解析](docs/bit_pnp_architecture.md)，不作为当前相机实验入口。
+Foxglove 连接 `ws://127.0.0.1:8765`，Image 选择 YOLO 发布的 `/vision/visualization/image`；关闭检测时选择相机原图 `/camera/camera/color/image_raw`。
+点云显示参考系选择 `camera_link`：`/vision/icp/target_cloud` 是观测，
+`/vision/icp/raw_aligned_cloud` 是原始 ICP 模型，`/vision/icp/aligned_cloud` 是经过约束的最终模型。
+主要业务输出是 `/vision/icp/object_poses`（PoseArray），不是夹爪 TCP 目标。
 
-新增独立的 C++／PCL 复现包 [vision_nodes_pcl](ros2_ws/src/vision_nodes_pcl/README.md)，配准参数、模型顶点采样、SOR→体素、ICP 及 Z 轴/六矿先验沿用 26 的 `target_detection`。相机、检测、画框、点云调试、Foxglove 和 RViz 均已接到同阶段入口；YOLO 复用当前 Python 检测节点。使用 `./build.sh --packages-select vision_nodes vision_nodes_pcl` 构建，`./run.sh mode:=vision_pcl use_rviz:=true` 启动。独立参数在 `vision_nodes_pcl/config/vision_params.yaml`，原 `mode:=vision` 和其配置保持不变；两种模式不能在同一域同时运行。PCL 默认使用复制自 26 的 `assets/energy.ply`，原点与 Python 使用的 STL 不同。
+已启动视觉流程时，另开终端加载本工作区后执行
+`ros2 launch camera_driver vision_rviz.launch.py`，只附加显示。
+详细流程、参数和验证见 [PCL 视觉说明](ros2_ws/src/vision_nodes/README.md)。
+此前的科技核心单目兑矿分析保留在 [北理 PnP 结构解析](docs/bit_pnp_architecture.md)。
 
 ## 各包的职责
 
@@ -30,10 +43,14 @@ cd /home/starbeloved/code/Robomaster/Engineer/Engineer_27
 | `moveit_config` | 纯机器人模型、SRDF、KDL、OMPL、MoveIt 执行端映射 | launch 启动 `/move_group` |
 | `sim_controller` | 模拟硬件 Xacro、ros2_control 配置、控制器、关节状态和 TF | `/controller_manager`、`arm_controller`、`joint_state_broadcaster`、`robot_state_publisher`、`world_to_base` |
 | `arm_visualization` | 默认 RViz 显示与可选 MoveIt 原生调试窗口 | 默认 `/rviz2`，可选 `/rviz_native` |
-| `vision_nodes` | D435、YOLO、框内点云与局部 ICP、独立画框与 Foxglove 接入 | `/camera/camera`、`/yolo_detector`、`/icp_registration`、`/main_visualizer`、`/foxglove_bridge` |
-| `vision_nodes_pcl` | 26 C++／PCL 配准及先验复现，与 Python 版同阶段的相机、检测和可视化 | 相同视觉节点名，另有 `/model_cloud_publisher`；与 `vision_nodes` 二选一启动 |
+| `vision_core` | PCL 公共计算、位姿约束与节点工具 | 库，不单独运行 |
+| `camera_driver` | D435 配置、官方驱动、Bridge 与 RViz 观察配置 | `/camera/camera`、`/foxglove_bridge` |
+| `yolo_detector` | YOLO/固定手动 ROI，发布检测框及同帧叠框图 | `/yolo_detector` |
+| `model_cloud_publisher` | PLY 模型点云 | `/model_cloud_publisher` |
+| `icp_registration` | 框内点云、PCL ICP 和后处理 | `/icp_registration` |
+| `video_recorder` | RGB 原图录像 | `/video_recorder` |
 
-每个功能包都有自己的 launch，加载所属 YAML；根目录 `run.sh` 直接在后台启动各包 launch、记录 PID，并在 Ctrl+C 或任一被监控的 launch 进程退出时统一停止系统。默认 `mode:=planning` 启动下图的机械臂系统；`mode:=vision` 启动 `vision_nodes/vision_pipeline.launch.py`，显式指定 `use_rviz:=true` 时再附加 `vision_nodes/vision_rviz.launch.py`。启动列表只维护在 run.sh，没有总 launch 包。`arm_visualization` 只管理机械臂显示，不启动规划、控制器或坐标变换。
+每个功能包都有自己的 launch，加载所属 YAML；根目录 `run.sh` 直接在后台启动各包 launch、记录 PID，并在 Ctrl+C 或任一被监控的 launch 进程退出时统一停止系统。默认 `mode:=planning` 启动下图的机械臂系统；`mode:=vision` 分别启动视觉分组下各功能包的 launch，显式指定 `use_rviz:=true` 时再附加 `camera_driver/vision_rviz.launch.py`。启动列表只维护在 run.sh，没有总 launch 包。`arm_visualization` 只管理机械臂显示，不启动规划、控制器或坐标变换。
 
 ```text
 run.sh
@@ -46,7 +63,7 @@ run.sh
 
 `assets/arm.urdf` 与 `assets/meshes/{visual,collision}` 是模型的唯一来源。构建时配置包生成安装用 URDF，仅将网格相对路径改为 `package://moveit_config/...`；不修改源 URDF，不安装 `assets/source` 归档。没有独立 description 包。
 
-离线网格处理工具仍放在 `scripts/`，其 Conda 环境由 `environment.yml` 管理。机械臂和基础 ROS 节点使用系统 Humble；YOLO 与 Open3D ICP 单独使用 Conda `engineer` 的 Python，不需要在终端激活环境。
+离线网格处理工具仍放在 `scripts/`，其 Conda 环境由 `environment.yml` 管理。机械臂和基础 ROS 节点使用系统 Humble；YOLO 子模块单独使用 Conda `engineer` 的 Python，不需要在终端激活环境。
 
 ## 构建和启动
 
@@ -203,7 +220,7 @@ ros2 run arm_goal plan_goal --joints 0.25 0 0 0 0 0 --ros-args -p planning_actio
 
 默认显示订阅 `/arm_planning/display_planned_path`，只接收自研节点复查后发布的轨迹。MoveIt 的 `/display_planned_path` 留给原生调试面板。如果改变 `display_topic`，也要在 RViz 的 Validated Trajectory 显示项同步修改订阅话题。MoveIt 标准 Action、关节反馈、TF 等保持其标准名称，需要改名时使用原生配置或 ROS remapping。
 
-完整的包—节点—接口清单、任务流、执行反馈流见 [通信说明](docs/communication.md)。下面是主要接口速查。
+下面列出主要节点、任务流和执行反馈接口。
 
 ## 节点与通信地图
 

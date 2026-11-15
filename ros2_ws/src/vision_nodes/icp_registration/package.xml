@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>icp_registration</name>
+  <version>0.1.0</version>
+  <description>ROI 点云处理、ICP 调度和能量单元位姿输出</description>
+  <maintainer email="engineer27@example.com">Engineer 27 Team</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>vision_core</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>vision_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_eigen</depend>
+  <depend>pcl_conversions</depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

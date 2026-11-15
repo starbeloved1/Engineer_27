@@ -1,0 +1,47 @@
+icp_registration:
+  ros__parameters:
+    # 输入
+    pointcloud_topic: /camera/camera/depth/color/points
+    camera_info_topic: /camera/camera/color/camera_info
+    detection_topic: /vision/yolo/detections
+    source_cloud_topic: /vision/model_cloud
+
+    # 输出
+    target_cloud_topic: /vision/icp/target_cloud
+    pose_topic: /vision/icp/object_poses
+    roi_cloud_topic: /vision/icp/roi_cloud 
+    aligned_cloud_topic: /vision/icp/aligned_cloud # 经过完整后处理的点云
+    raw_aligned_cloud_topic: /vision/icp/raw_aligned_cloud
+    raw_pose_topic: /vision/icp/raw_object_poses # pose
+
+    max_icp_iter: 120 # PCL 最大迭代次数
+    voxel_size: 0.006 # 6mm 体素下采样
+    max_corr_dist: 1.0 # 最大对应距离< xm
+    min_points: 80 # ROI 提取和过滤后的观测点下限
+    sor_mean_k: 20 
+    sor_std_mul: 0.8 
+    max_range: 1.5 # 相机到点的欧氏距离< xm
+    bbox_shrink_ratio: 0.0 
+    use_prev_init: true # 是否使用上次成功的revc与tevc作为初值
+    fitness_threshold: 0.92 
+    max_fitness_score: 0.01
+    publish_tf: true
+    log_debug: true
+    log_every_n: 10
+    centroid_init: true
+    use_hexagon_prior: true # 是否开启六矿布局先验
+    hexagon_vertex_count: 6
+    hexagon_min_observations: 3
+    hexagon_nominal_radius: 0.0 # m，0表示由观测估计，可填入具体半径数值
+    hexagon_radius_tolerance: 0.03 # m
+    hexagon_snap_max_distance: 0.04 # m，槽位吸附门限
+    hexagon_snap_gain: 0.8 # 槽位吸附权重
+    hexagon_state_smoothing: 0.35 # 新观测权重
+    force_outward_z_axis: true # 修正z轴朝向
+    enforce_z_axis_angle_constraint: true # 修正z轴角度
+    z_axis_angle_constraint_gain: 1.0 # 修正比例，后续尝试调小
+    z_axis_angle_max_deviation_deg: 180.0 
+    target_frame: camera_link # 后续可改base_link
+
+    max_data_age: 1.5 
+    input_reliability: reliable 

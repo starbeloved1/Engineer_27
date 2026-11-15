@@ -1,0 +1,9 @@
+model_cloud_publisher:
+  ros__parameters:
+    model_path: assets/energy.ply
+    sample_points: 5000 # 随机限点的上限，超过5000会随机保留
+    voxel_size: 0.005 # 5mm 体素降采样
+    frame_id: energy_model # 模型点云坐标系
+    scale: 0.001 
+    publish_rate: 100.0 
+    topic: /vision/model_cloud # pub

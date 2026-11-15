@@ -1,0 +1,28 @@
+# 由 RealSense 驱动读取相机参数
+/camera/camera:
+  ros__parameters:
+    enable_color: true
+    enable_depth: true
+    enable_infra: false
+    enable_infra1: false
+    enable_infra2: false
+    rgb_camera.color_profile: '1280x720x30' 
+    rgb_camera.color_format: 'RGB8'
+    depth_module.depth_profile: '848x480x30' 
+    depth_module.depth_format: 'Z16'
+    enable_sync: true # 帧配对
+    align_depth.enable: true
+    pointcloud.enable: true
+    pointcloud.stream_filter: 2 
+    pointcloud.stream_index_filter: 0
+    pointcloud.allow_no_texture_points: false
+    pointcloud.ordered_pc: false
+    publish_tf: true
+
+# 独立录制节点
+/video_recorder:
+  ros__parameters:
+    video: true # 是否开启录制
+    color_topic: /camera/camera/color/image_raw
+    output_dir: video 
+    fps: 0.0 
