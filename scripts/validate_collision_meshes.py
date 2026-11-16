@@ -66,9 +66,10 @@ def pairs(objects, ignored):
 
 
 def validate(assets):
-    root = ET.parse(assets / 'arm.urdf').getroot()
+    runtime = merger.runtime_directory(assets)
+    root = ET.parse(runtime / 'arm.urdf').getroot()
     names = [l.get('name') for l in root.findall('link')]
-    collision = {name: load_object(assets / 'meshes/collision' / f'{name}.stl') for name in names}
+    collision = {name: load_object(runtime / 'meshes/collision' / f'{name}.stl') for name in names}
     original = {name: load_object(assets / 'source/merged_v1/meshes/visual' / f'{name}.stl') for name in names}
     ignored = {tuple(sorted((j.find('parent').get('link'), j.find('child').get('link')))) for j in root.findall('joint')}
     joints = [j.get('name') for j in root.findall('joint')]
@@ -114,7 +115,7 @@ def validate(assets):
     result['all_exposed_contact_tests_passed'] = all(t['collision'] for t in contact_tests)
     result['missing_pair_count'] = sum(len(p['missing_pairs']) for p in result['poses'])
     result['additional_pair_count'] = sum(len(p['additional_pairs']) for p in result['poses'])
-    (assets / 'collision_validation.json').write_text(json.dumps(result, indent=2) + '\n')
+    (runtime / 'collision_validation.json').write_text(json.dumps(result, indent=2) + '\n')
     if not result['all_exposed_contact_tests_passed'] or result['missing_pair_count']:
         raise ValueError('Collision validation found missed contacts; inspect collision_validation.json')
     return result

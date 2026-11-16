@@ -60,8 +60,8 @@ D435 默认 USB 3：彩色 `1280x720x30`、原始深度 `848x480x30`，RGB8/Z16�
 修改流模式后需重启并重新选择手动 ROI。
 
 基础 ROS 和录像使用系统 Python；YOLO launch 自动选择 Conda `engineer` 的 Python。
-依赖清单为 `yolo_detector/requirements.txt`，模型权重保留在根目录 `assets/best.pt`，
-由 yolo_detector 安装到其 share/assets。默认相对权重路径以该包 share 为工作目录解析。
+依赖清单为 `yolo_detector/requirements.txt`，模型权重保留在根目录 `model/best.pt`，
+由 yolo_detector 安装到其 share/model。默认相对权重路径以该包 share 为工作目录解析。
 `device: gpu` 选择第一张 CUDA GPU，`device: cpu` 选择 CPU，修改后重启节点；
 节点内部将 gpu 转为推理库要求的设备编号 0。YOLO 结果保留原图像素坐标和采集时间戳。
 
@@ -96,7 +96,7 @@ ros2 param set /video_recorder video false
 
 ## PCL 流程和接口
 
-模型文件为根目录 `assets/energy.ply`，由 model_cloud_publisher 安装到本包 share/assets。
+模型文件为根目录 `assets/energy/energy.ply`，由 model_cloud_publisher 安装到本包 share/assets/energy。
 保留 26 的点云和参数流程：PLY 顶点乘 0.001 → 最多 5000 点 → 5 mm 模型体素；
 观测云距离筛选 → 按点云时间戳用 TF 转到彩色 CameraInfo 坐标系并投影框选 → SOR → 6 mm 体素 → 质心或上帧变换初始化 → 点到点 ICP。
 ICP 最大 120 次、对应距离 1 m；`getFitnessScore()` 为 MSE（m²），
@@ -127,7 +127,7 @@ ROI 投影使用 CameraInfo 的 frame_id 查询输入点云到彩色光学坐标
 | `/vision/icp/aligned_cloud`、`object_poses` | 最终约束后的模型和 PoseArray |
 
 输出使用配置 `target_frame`，当前为 `camera_link`，保留点云采集时间，单位米。
-原点是 PLY CAD 原点，不是夹爪 TCP；模型资料见 [energy_model.md](../../../assets/energy_model.md)。
+原点是 PLY CAD 原点，不是夹爪 TCP；模型资料见 [能量单元模型说明](../../../assets/energy/README.md)。
 无检测或失效时发布空结果，输入超过 `max_data_age` 会清空输出与缓存。
 数组没有跨帧稳定身份；TF 历史不能撤销，后续业务应以当前 PoseArray 判断有效性。
 

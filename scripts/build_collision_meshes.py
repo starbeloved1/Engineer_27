@@ -253,11 +253,12 @@ def publish(assets, staging):
 
 def generate(assets: Path) -> dict:
     assets = assets.resolve()
+    runtime_dir = merger.runtime_directory(assets)
     merger.ensure_archive(assets)
     source_file = assets / 'source' / 'arm.urdf'
     source = ET.parse(source_file).getroot()
-    runtime = ET.parse(assets / 'arm.urdf').getroot()
-    runtime_snapshot = merger.snapshot(assets / 'arm.urdf')
+    runtime = ET.parse(runtime_dir / 'arm.urdf').getroot()
+    runtime_snapshot = merger.snapshot(runtime_dir / 'arm.urdf')
     original_runtime = copy.deepcopy(runtime)
     runtime_links = {l.get('name'): l for l in runtime.findall('link')}
     cache = {}
@@ -325,9 +326,9 @@ def generate(assets: Path) -> dict:
         report['parts_above_sample_target'] = [name for name, v in report['parts'].items() if not v['sample_target_met']]
         (staging / 'collision_report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
         merger.ensure_archive(assets)
-        if merger.snapshot(assets / 'arm.urdf') != runtime_snapshot:
+        if merger.snapshot(runtime_dir / 'arm.urdf') != runtime_snapshot:
             raise ValueError('Runtime URDF changed during generation; refusing to overwrite edits')
-        publish(assets, staging)
+        publish(runtime_dir, staging)
     print(f'Published {report["total_triangles"]:,} independent collision faces / {report["total_bytes"] / 1024**2:.2f} MiB', flush=True)
     return report
 

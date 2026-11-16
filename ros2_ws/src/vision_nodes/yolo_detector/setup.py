@@ -10,7 +10,7 @@ setup(
         ('share/yolo_detector/config', glob('config/*.yaml')),
         ('share/yolo_detector/launch', glob('launch/*.launch.py')),
         ('share/yolo_detector', ['requirements.txt']),
-        ('share/yolo_detector/assets', ['../../../../assets/best.pt']),
+        ('share/yolo_detector/model', ['../../../../model/best.pt']),
     ],
     install_requires=['setuptools'], zip_safe=True,
     maintainer='Engineer 27 Team', maintainer_email='engineer27@example.com',

@@ -238,12 +238,13 @@ def write_stl(path: Path, parts: list[np.ndarray], link: str) -> None:
 
 def generate(assets: Path, strict_budget: bool = True) -> dict:
     assets = assets.resolve()
+    runtime_dir = merger.runtime_directory(assets)
     merger.ensure_archive(assets)
     verify_first_merge(assets)
     source_path = assets / "source" / "arm.urdf"
     source = ET.parse(source_path).getroot()
-    runtime = ET.parse(assets / "arm.urdf").getroot()
-    runtime_snapshot = merger.snapshot(assets / "arm.urdf")
+    runtime = ET.parse(runtime_dir / "arm.urdf").getroot()
+    runtime_snapshot = merger.snapshot(runtime_dir / "arm.urdf")
     original_runtime = copy.deepcopy(runtime)
     source_links = {link.get("name"): link for link in source.findall("link")}
     runtime_links = {link.get("name"): link for link in runtime.findall("link")}
@@ -336,9 +337,9 @@ def generate(assets: Path, strict_budget: bool = True) -> dict:
         (staging / "mesh_merge_report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         merger.ensure_archive(assets)
         verify_first_merge(assets)
-        if merger.snapshot(assets / 'arm.urdf') != runtime_snapshot:
+        if merger.snapshot(runtime_dir / 'arm.urdf') != runtime_snapshot:
             raise ValueError('Runtime URDF changed during generation; refusing to overwrite edits')
-        merger.publish(assets, staging)
+        merger.publish(runtime_dir, staging)
     print(f"Published lightweight visual: {report['output_total_triangles']:,} triangles, "
           f"{report['output_total_bytes'] / 1024**2:.2f} MiB; {time.monotonic() - start:.1f} seconds", flush=True)
     return report

@@ -32,7 +32,7 @@ class YoloDetector(Node):
         self.use_manual_roi = self.declare_parameter("use_manual_roi", False).value
         self.manual_roi = ManualRoiSelector()
         model_path = self.declare_parameter(
-            "model_path", "assets/best.pt").value
+            "model_path", "model/best.pt").value
         self.conf_thres = float(self.declare_parameter("conf_thres", 0.5).value)
         self.iou_thres = float(self.declare_parameter("iou_thres", 0.45).value)
         self.device_name = self.declare_parameter("device", "cpu").value.strip().lower()

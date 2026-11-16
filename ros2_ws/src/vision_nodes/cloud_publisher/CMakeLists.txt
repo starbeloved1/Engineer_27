@@ -19,6 +19,6 @@ target_link_libraries(model_cloud_publisher_node vision_core::vision_core)
 install(TARGETS model_cloud_publisher_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../../../assets/energy.ply
-  DESTINATION share/${PROJECT_NAME}/assets)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../../../assets/energy/energy.ply
+  DESTINATION share/${PROJECT_NAME}/assets/energy)
 ament_package()

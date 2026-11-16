@@ -1,4 +1,4 @@
-"""Preview the exported arm in ROS 2; mesh paths are resolved in memory."""
+"""独立预览 URDF；相对网格路径在内存中解析，不修改模型文件。"""
 
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -28,6 +28,10 @@ def load_description(urdf_path):
 
 def create_nodes(context):
     description = load_description(LaunchConfiguration("urdf").perform(context))
+    root = ET.fromstring(description)
+    children = {joint.find("child").get("link") for joint in root.findall("joint")}
+    fixed_frame = next(link.get("name") for link in root.findall("link")
+                       if link.get("name") not in children)
     parameters = [{
         "robot_description": ParameterValue(description, value_type=str),
         "use_sim_time": False,
@@ -62,7 +66,8 @@ def create_nodes(context):
         Node(
             package="rviz2",
             executable="rviz2",
-            arguments=["-d", str(Path(LaunchConfiguration("rviz_config").perform(context)).expanduser().resolve())],
+            arguments=["-d", str(Path(LaunchConfiguration("rviz_config").perform(context)).expanduser().resolve()),
+                       "-f", fixed_frame],
             condition=IfCondition(LaunchConfiguration("rviz")),
             output="screen",
         ),
@@ -72,7 +77,7 @@ def create_nodes(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
-            "urdf", default_value=str(Path(__file__).with_name("arm.urdf"))
+            "urdf", default_value=str(Path(__file__).resolve().parents[1] / "assets/engineer/arm.urdf")
         ),
         DeclareLaunchArgument("gui", default_value="true"),
         DeclareLaunchArgument("rviz", default_value="true"),

@@ -48,26 +48,32 @@ def snapshot(path: Path) -> dict:
     return {"bytes": path.stat().st_size, "sha256": sha256(path)}
 
 
+def runtime_directory(assets: Path) -> Path:
+    """原始归档仍在 assets/source，当前机械臂模型放在 assets/engineer。"""
+    return assets / 'engineer' if (assets / 'engineer').is_dir() else assets
+
+
 def ensure_archive(assets: Path) -> dict:
     """Create a checked archive once; never replace an existing archive."""
     archive = assets / "source"
+    runtime = runtime_directory(assets)
     if not archive.exists():
-        original = assets / "arm.urdf"
+        original = runtime / "arm.urdf"
         if not original.is_file():
             raise FileNotFoundError(original)
         meshes = sorted(
-            path for path in (assets / "meshes").rglob("*")
+            path for path in (runtime / "meshes").rglob("*")
             if path.is_file() and path.suffix.lower() == ".stl"
         )
         if not meshes:
             raise ValueError("No original STL meshes to archive")
         originals = [original, *meshes]
-        manifest = {str(path.relative_to(assets)): snapshot(path) for path in originals}
+        manifest = {str(path.relative_to(runtime)): snapshot(path) for path in originals}
         with tempfile.TemporaryDirectory(prefix=".archive-", dir=assets) as temporary:
             staging = Path(temporary) / "source"
             staging.mkdir()
             for path in originals:
-                relative = path.relative_to(assets)
+                relative = path.relative_to(runtime)
                 destination = staging / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(path, destination)
@@ -347,7 +353,7 @@ def clean_original_copies(assets: Path, manifest: dict) -> int:
     for relative, expected in manifest.items():
         if not relative.startswith("meshes/"):
             continue
-        path = assets / relative
+        path = runtime_directory(assets) / relative
         if path.is_file():
             # Only remove a copy whose contents are still in the checked archive.
             try:
@@ -363,7 +369,7 @@ def clean_original_copies(assets: Path, manifest: dict) -> int:
 
 def run(assets: Path, chunk_size: int = 100_000, output_dir: Path | None = None) -> dict:
     assets = assets.resolve()
-    destination = assets if output_dir is None else output_dir.resolve()
+    destination = runtime_directory(assets) if output_dir is None else output_dir.resolve()
     archive = assets / "source"
     if destination.is_relative_to(archive) and destination != archive / "merged_regenerated":
         raise ValueError("Cannot overwrite archived inputs; use source/merged_regenerated")
@@ -377,7 +383,7 @@ def run(assets: Path, chunk_size: int = 100_000, output_dir: Path | None = None)
         # Recheck archive integrity before publishing or cleaning original copies.
         ensure_archive(assets)
         publish(destination, staging)
-    removed = clean_original_copies(assets, manifest) if destination == assets else 0
+    removed = clean_original_copies(assets, manifest) if destination == runtime_directory(assets) else 0
     print(f"Published {len(report)} visual meshes; removed {removed} archived duplicate meshes", flush=True)
     return report
 

@@ -32,7 +32,7 @@ conda run -n engineer27-mesh python scripts/simplify_visual_meshes.py
 conda run -n engineer27-mesh python -m pip install -r scripts/mesh_requirements.txt
 ```
 
-网格生成会更新 assets 中的运行模型；生成之前会校验原始资料归档。
+网格生成读取 `assets/source/`，更新 `assets/engineer/` 中的运行模型；生成之前会校验原始资料归档。
 从资产更新 ROS 描述包时，需要重新编译 `ros2_ws`。
 
 ## 验证

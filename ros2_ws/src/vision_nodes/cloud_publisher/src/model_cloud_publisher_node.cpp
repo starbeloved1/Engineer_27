@@ -9,7 +9,7 @@ namespace model_cloud_publisher
 using namespace vision_core;
 ModelCloudPublisherNode::ModelCloudPublisherNode() : Node("model_cloud_publisher")
 {
-  auto path = declare_parameter<std::string>("model_path", "assets/energy.ply");
+  auto path = declare_parameter<std::string>("model_path", "assets/energy/energy.ply");
   const auto scale = declare_parameter<double>("scale", 0.001);
   const auto samples = declare_parameter<int>("sample_points", 5000);
   const auto voxel = declare_parameter<double>("voxel_size", 0.005);

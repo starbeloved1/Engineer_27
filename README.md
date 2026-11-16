@@ -91,7 +91,7 @@ cd /home/starbeloved/code/Robomaster/Engineer/Engineer_27
 `run.sh mode:=vision` 分别启动这些包；`mode:=vision_pcl` 保留为兼容别名。
 
 相机使用 USB 3：彩色 1280×720、深度 848×480，均请求 30 FPS，算法实际处理频率另计。
-权重 `assets/best.pt` 和 PCL 模型 `assets/energy.ply` 复制自 `engineer_2026/jetson`。
+权重 `model/best.pt` 和 PCL 模型 `assets/energy/energy.ply` 复制自 `engineer_2026/jetson`。
 手动 ROI 开关在 `yolo_detector/config/yolo_detector.yaml`，RGB 原图录像开关在
 `camera_driver/config/camera.yaml`，视频保存到 `video/`；路径均相对于视觉分组目录。
 
@@ -150,7 +150,7 @@ engineer_mtc:
 ./run.sh mtc_config:=/absolute/path/override.yaml
 ```
 
-`assets/arm.urdf` 与 `assets/meshes/{visual,collision}` 是运行模型来源；构建时仅将网格路径
+`assets/engineer/arm.urdf` 与 `assets/engineer/meshes/{visual,collision}` 是运行模型来源；构建时仅将网格路径
 转换为安装用 `package://moveit_config/...` 路径，不修改原模型或 `assets/source/` 归档。
 当前规划末端为 `link_6` 原点，尚不是已标定的夹爪 TCP。
 
@@ -188,3 +188,19 @@ ROS_DOMAIN_ID=195 /usr/bin/python3 scripts/test_run_supervision.py
 
 它检查 YAML 关闭显示、命令行覆盖开关、默认 MTC 启动后的 Ctrl+C 清理、子 launch 退出联动清理、
 非法参数拒绝，以及视觉重复启动的互斥。视觉测试关闭相机、检测和 Bridge，不占用相机。MTC 小实验用于验证规划与预览链路。
+
+## 模型资源与独立预览
+
+```text
+assets/
+├── engineer/   # 机械臂 URDF、visual、collision
+├── energy/     # 单块能量单元 URDF、STL、PLY 和碰撞覆盖报告
+└── source/     # 原始资料归档
+model/          # YOLO 权重
+tools/         # 独立预览与能量单元 URDF 生成工具
+```
+
+预览入口已从 assets 移到 `tools/preview.launch.py`。使用方法见 [tools](tools/README.md)。
+能量单元为新建的单块描述，碰撞采用两端圆柱和中部方盒，保留抓取窄腰；
+[模型说明和 26 对比](assets/energy/README.md) 包含尺寸、坐标约定和覆盖校验。
+它目前作为独立资源安装，尚未自动接入 MTC 场景或标定到 ICP 模型坐标系。

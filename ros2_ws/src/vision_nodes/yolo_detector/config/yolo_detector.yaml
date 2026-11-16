@@ -1,7 +1,7 @@
 yolo_detector:
   ros__parameters:
     use_manual_roi: true # 是否启用手动 roi
-    model_path: assets/best.pt
+    model_path: model/best.pt
     color_topic: /camera/camera/color/image_raw
     detection_topic: /vision/yolo/detections
     visualization_topic: /vision/visualization/image # 可视化

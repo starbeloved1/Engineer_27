@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="energy">
+  <!--Standalone rigid object; not a calibrated gripper TCP. Units: m.-->
+  <link name="energy_link">
+    <visual name="energy_visual">
+      <origin xyz="-0.0007342456 -0.0012666311 -0.0750000000" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="energy.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="energy_silver">
+        <color rgba="0.70 0.76 0.82 1" />
+      </material>
+    </visual>
+    <collision name="wide_end">
+      <origin xyz="0.0000473802 0.0000455790 -0.0550447090" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0477514982" length="0.0404894179" />
+      </geometry>
+    </collision>
+    <collision name="waist">
+      <origin xyz="0.0000000000 0.0000000000 0.0000000000" rpy="0 0 0" />
+      <geometry>
+        <box size="0.0644000768 0.0604303774 0.0704000000" />
+      </geometry>
+    </collision>
+    <collision name="small_end">
+      <origin xyz="-0.0000563662 -0.0000715704 0.0549942703" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0402587950" length="0.0403885406" />
+      </geometry>
+    </collision>
+  </link>
+</robot>
