@@ -5,13 +5,13 @@ engineer_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<'HELP'
-用法：./run.sh [mode:=planning|vision] [use_rviz:=true|false]
-               [start_planner:=true|false] [start_goal:=true|false]
-               [controller_config:=FILE] [planner_config:=FILE] [goal_config:=FILE]
+用法：./run.sh [mode:=mtc|vision] [use_rviz:=true|false]
+               [controller_config:=FILE] [sim_config:=FILE] [mtc_config:=FILE]
                [start_camera:=true|false] [start_detector:=true|false] [start_icp:=true|false] [start_bridge:=true|false]
                [camera_config:=FILE] [vision_config:=FILE] [foxglove_config:=FILE]
                [yolo_python:=FILE]
-默认 planning：启动模拟控制、MoveIt、规划服务、Topic 客户端和 RViz。
+默认 mtc：启动模拟控制、MoveIt、engineer_mtc 和任务 RViz；只规划预览，不执行运动。
+机械臂 RViz 默认由 sim_controller/config/sim_controller.yaml 控制，use_rviz 可临时覆盖。
 vision：启动 vision_nodes 分组下的 D435、YOLO/叠框图像、PCL ICP、Bridge 和录像；请先关闭 RealSense Viewer。
 vision_pcl：保留为 vision 的兼容别名；各节点加载各自包内的 config。
 Foxglove 连接 ws://127.0.0.1:8765；vision 加 use_rviz:=true 打开相机视角 RViz，默认不打开。
@@ -20,14 +20,10 @@ Foxglove 连接 ws://127.0.0.1:8765；vision 加 use_rviz:=true 打开相机视�
 HELP
 }
 
-mode=planning
-use_rviz=true
+mode=mtc
 vision_use_rviz=false
-start_planner=true
-start_goal=true
 controller_arguments=()
-planner_arguments=()
-goal_arguments=()
+mtc_arguments=()
 start_camera=true
 start_detector=true
 start_icp=true
@@ -41,20 +37,18 @@ recorder_arguments=()
 for argument in "$@"; do
   case "$argument" in
     -h|--help) usage; exit 0 ;;
-    mode:=planning|mode:=vision) mode="${argument#*:=}" ;;
+    mode:=vision|mode:=mtc) mode="${argument#*:=}" ;;
     mode:=vision_pcl) mode=vision ;;
     use_rviz:=true|use_rviz:=false)
-      use_rviz="${argument#*:=}"
-      vision_use_rviz="$use_rviz" ;;
-    start_planner:=true|start_planner:=false) start_planner="${argument#*:=}" ;;
-    start_goal:=true|start_goal:=false) start_goal="${argument#*:=}" ;;
+      controller_arguments+=("$argument")
+      vision_use_rviz="${argument#*:=}" ;;
     start_camera:=true|start_camera:=false) start_camera="${argument#*:=}" ;;
     start_detector:=true|start_detector:=false) start_detector="${argument#*:=}" ;;
     start_icp:=true|start_icp:=false) start_icp="${argument#*:=}" ;;
     start_bridge:=true|start_bridge:=false) start_bridge="${argument#*:=}" ;;
-    controller_config:=?*) controller_arguments=("$argument") ;;
-    planner_config:=?*) planner_arguments=("$argument") ;;
-    goal_config:=?*) goal_arguments=("$argument") ;;
+    controller_config:=?*) controller_arguments+=("$argument") ;;
+    sim_config:=?*) controller_arguments+=("$argument") ;;
+    mtc_config:=?*) mtc_arguments=("$argument") ;;
     camera_config:=?*) camera_arguments+=("$argument"); recorder_arguments+=("$argument") ;;
     vision_config:=?*)
       detector_arguments+=("$argument")
@@ -166,15 +160,7 @@ if [[ "$mode" == vision ]]; then
 else
   start_launch sim_controller sim_controller.launch.py "${controller_arguments[@]}"
   start_launch moveit_config moveit.launch.py
-  if [[ "$start_planner" == true ]]; then
-    start_launch arm_planning arm_planning.launch.py "${planner_arguments[@]}"
-  fi
-  if [[ "$start_goal" == true ]]; then
-    start_launch arm_goal arm_goal.launch.py "${goal_arguments[@]}"
-  fi
-  if [[ "$use_rviz" == true ]]; then
-    start_launch arm_visualization rviz.launch.py
-  fi
+  start_launch engineer_mtc engineer_mtc.launch.py "${mtc_arguments[@]}"
 fi
 
 # 任一被监控的 launch 进程退出时，停止其余进程；正常用户退出由 trap 处理。

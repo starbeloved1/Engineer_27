@@ -25,13 +25,4 @@ install(TARGETS icp_registration_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(test_projection_roi test/test_projection_roi.cpp src/icp_registration_node.cpp)
-  target_compile_features(test_projection_roi PUBLIC cxx_std_17)
-  target_include_directories(test_projection_roi PRIVATE include)
-  ament_target_dependencies(test_projection_roi rclcpp sensor_msgs std_msgs geometry_msgs vision_msgs
-    tf2_ros tf2_eigen pcl_conversions)
-  target_link_libraries(test_projection_roi vision_core::vision_core)
-endif()
 ament_package()

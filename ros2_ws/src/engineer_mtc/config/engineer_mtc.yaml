@@ -1,0 +1,27 @@
+engineer_mtc:
+  ros__parameters:
+    pose_topic: /vision/icp/object_poses # 默认在camera_link下                    
+    target_index: 0
+    max_target_age: 1.5 # s
+    max_joint_age: 1.0 # s
+
+    base_frame: base_link
+    planning_group: arm_control
+    tip_link: link_6 # 当前规划末端link_6
+    planning_pipeline: ompl
+    planner_id: RRTConnectkConfigDefault
+    planning_time: 5.0 # s，规划预算
+    max_ik_solutions: 8 # 候选解数量
+    velocity_scaling: 0.2
+    acceleration_scaling: 0.2
+
+    # 抓取点相对 PLY 原点的位姿
+    object_to_tcp_xyz: [0.0, 0.0, 0.0] # m
+    object_to_tcp_rpy: [0.0, 0.0, 0.0] # rad
+    # TCP 相对 link_6 的位姿
+    tip_to_tcp_xyz: [0.0, 0.0, 0.0]
+    tip_to_tcp_rpy: [0.0, 0.0, 0.0]
+    approach_axis: [1.0, 0.0, 0.0] # 预抓取接近方向
+    pregrasp_distance: 0.07 # m
+    include_approach: true # 写 true 即可
+    cartesian_step: 0.005 # m，直线插值步长

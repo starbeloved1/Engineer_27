@@ -34,12 +34,17 @@ def running(pid):
 
 
 class RunSupervision(unittest.TestCase):
-    def run_system(self, fail_launch):
+    def run_system(self, fail_launch, config_use_rviz=False, override=None):
         environment = dict(os.environ, ROS_DOMAIN_ID=os.environ.get('ROS_DOMAIN_ID', '195'))
         with tempfile.TemporaryDirectory(prefix='engineer_run_') as directory:
             path = Path(directory) / 'runtime.log'
+            config = Path(directory) / 'sim_controller.yaml'
+            config.write_text(f'use_rviz: {str(config_use_rviz).lower()}\n')
+            arguments = [str(ROOT / 'run.sh'), f'sim_config:={config}']
+            if override is not None:
+                arguments.append(f'use_rviz:={str(override).lower()}')
             with path.open('w') as log:
-                process = subprocess.Popen([str(ROOT / 'run.sh'), 'use_rviz:=false'], cwd=ROOT,
+                process = subprocess.Popen(arguments, cwd=ROOT,
                                            env=environment, stdout=log, stderr=subprocess.STDOUT,
                                            start_new_session=True)
                 tracked = set()
@@ -47,16 +52,20 @@ class RunSupervision(unittest.TestCase):
                     deadline = time.monotonic() + 40
                     while time.monotonic() < deadline:
                         self.assertIsNone(process.poll(), path.read_text())
-                        if 'Ready: /arm_planning/plan_motion' in path.read_text():
+                        output = path.read_text()
+                        if 'MTC ready:' in output and 'sim_controller: use_rviz=false' in output:
                             break
                         time.sleep(.1)
                     else:
-                        self.fail('Planning server did not become ready: ' + path.read_text())
+                        self.fail('MTC server did not become ready: ' + path.read_text())
                     tracked = descendants(process.pid)
+                    self.assertIn('sim_controller: use_rviz=false', path.read_text())
+                    self.assertFalse(any(b'/rviz2' in Path(f'/proc/{pid}/cmdline').read_bytes()
+                                         for pid in tracked if Path(f'/proc/{pid}/cmdline').exists()))
                     launches = children(process.pid)
-                    self.assertEqual(len(launches), 4, path.read_text())
+                    self.assertEqual(len(launches), 3, path.read_text())
                     if fail_launch:
-                        target = next(pid for pid in launches if b'arm_goal.launch.py' in
+                        target = next(pid for pid in launches if b'engineer_mtc.launch.py' in
                                       Path(f'/proc/{pid}/cmdline').read_bytes())
                         os.kill(target, signal.SIGTERM)
                     else:
@@ -91,9 +100,14 @@ class RunSupervision(unittest.TestCase):
     def test_launch_exit_stops_the_rest(self):
         self.run_system(fail_launch=True)
 
+    def test_cli_can_disable_rviz_enabled_in_config(self):
+        self.run_system(fail_launch=False, config_use_rviz=True, override=False)
+
     def test_invalid_argument_does_not_start_system(self):
         for argument in ['use_rviz:=invalid', 'mode:=invalid', 'start_camera:=invalid',
-                         'start_bridge:=invalid', 'start_detector:=invalid', 'start_icp:=invalid']:
+                         'start_bridge:=invalid', 'start_detector:=invalid', 'start_icp:=invalid',
+                         'mode:=planning', 'start_planner:=false', 'start_goal:=false',
+                         'planner_config:=/tmp/removed.yaml', 'goal_config:=/tmp/removed.yaml']:
             with self.subTest(argument=argument):
                 result = subprocess.run([str(ROOT / 'run.sh'), argument], cwd=ROOT,
                                         capture_output=True, text=True, timeout=5)
@@ -115,11 +129,11 @@ class RunSupervision(unittest.TestCase):
                     while time.monotonic() < deadline:
                         self.assertIsNone(process.poll(), path.read_text())
                         tracked.update(descendants(process.pid))
-                        if 'Main visualizer:' in path.read_text():
+                        if 'RGB recorder:' in path.read_text():
                             break
                         time.sleep(.1)
                     else:
-                        self.fail('Visualizer did not become ready: ' + path.read_text())
+                        self.fail('Recorder did not become ready: ' + path.read_text())
                     # 第二次使用默认参数；必须在启动硬件和占用端口之前退出
                     result = subprocess.run(
                         [str(ROOT / 'run.sh'), 'mode:=vision'], cwd=ROOT, env=environment,

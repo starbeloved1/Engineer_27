@@ -1,5 +1,3 @@
-# 读取方：ros2_control 的 controller_manager 及其控制器。
-# joint_state_broadcaster 发布 /joint_states；arm_controller 提供 FollowJointTrajectory Action。
 controller_manager:
   ros__parameters:
     update_rate: 100 # 样条插值

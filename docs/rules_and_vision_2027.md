@@ -230,7 +230,7 @@ flowchart TD
 
 ## 7. Engineer_27 与这套任务的关系
 
-[当前 README](../README.md) 和 [PlanMotion.action](../ros2_ws/src/act_interfaces/action/PlanMotion.action) 表明：现在已有模型、末端／关节目标规划、碰撞检查、预览和模拟执行。当前末端是 `link_6` 原点，尚不是已标定夹持 TCP。
+[当前 README](../README.md) 和 [MTC 任务入口](../ros2_ws/src/engineer_mtc/src/mtc_node.cpp) 表明：现在使用 MTC 将物体位姿转换为预抓取目标，支持预抓取及可选直线接近规划、已有场景的碰撞检查与轨迹预览；系统提供模拟关节反馈，MTC 尚未接入运动执行。当前末端是 `link_6` 原点，尚不是已标定夹持 TCP。
 
 因此后续业务上需要补齐的衔接是：
 
