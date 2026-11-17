@@ -1,6 +1,7 @@
 engineer_mtc:
   ros__parameters:
     pose_topic: /vision/icp/object_poses # 默认在camera_link下               
+    # 输入统一为 URDF energy_link 原点和轴向的位姿；header.frame_id 仍是相机或基座。
     target_index: 0
     max_target_age: 1.5 # s
     max_joint_age: 1.0 # s
@@ -17,8 +18,9 @@ engineer_mtc:
     acceleration_scaling: 0.2
 
     # 抓取点相对 PLY 原点的位姿
-    object_to_tcp_xyz: [0.0, 0.0, 0.0] # m
-    object_to_tcp_rpy: [0.0, 0.0, 0.0] # rad
+    # 当前参数含义为 URDF energy_link -> TCP；已换算以保持原抓取位置和朝向。
+    object_to_tcp_xyz: [-0.000734251986318, -0.001468988580768, 0.004329394048142] # m
+    object_to_tcp_rpy: [-3.139041892858582, -0.000000107428275, -0.000003732645167] # rad
     # TCP 相对 link_6 的位姿
     tip_to_tcp_xyz: [0.0, 0.0, 0.0]
     tip_to_tcp_rpy: [0.0, 0.0, 0.0]
@@ -28,17 +30,20 @@ engineer_mtc:
     cartesian_step: 0.005 # m，直线插值步长
 
     # auto 连续执行；step 每阶段完成后等待
-    execution_mode: auto
+    execution_mode: step
     gripper_group: gripper
     object_id: energy
-    touch_links: [link_6]
+    touch_links: [link_6] # 额外接触 link；机械臂组已按 26 pick 整体允许与矿碰撞
     # T_PLY_energy：离线模型之间的变换
-    object_to_energy_xyz: [0.000734246038, -0.001457943306, 0.004333127084]
-    object_to_energy_rpy: [3.139041892859, -0.000000116949, -0.000003732359]
-    extraction_axis: [0.0, 0.0, 1.0] 
+    # 此变换已移至 icp_registration 的 ply_to_energy 参数，MTC 不再应用。
+    # 拉取轴在 URDF 中约为 -Z（朝大头），由原 PLY +Z 精确转换而来。
+    extraction_axis: [0.000000116949, 0.002550757964758, -0.999996746811604]
     extraction_distance: 0.10 # m
     storage_distance: 0.10 # 预存矿沿存矿坐标系的+Z偏移
+    # 当前预存矿位沿拉取轴退开此距离，再沿反方向放入；不再固定沿存矿 +Z 偏移。
     retreat_distance: 0.07 # 松爪后沿TCP接近方向的反向退出
-    # 仅模拟占位
-    storage_xyz: [0.25, 0.20, 0.35] 
-    storage_rpy: [0.0, 0.0, 0.0]
+    # 借用 26 左存矿位的 X/Y 与朝向，Z 抬高到 0.19 m 用于 27 模拟测试。
+    # 27 仍按夹持关系换算 link_6 目标；此处不是 26 的夹爪末端目标，也未标定到 27 实物。
+    storage_xyz: [-0.277770966183247, 0.186945142397677, 0.19]
+    # URDF +Z 指向小头；绕 X 翻转使小头朝下。
+    storage_rpy: [3.141592653589793, 0.0, 2.09439510]

@@ -5,7 +5,6 @@ engineer_mtc:
     acceleration_scaling: 0.5
     tip_to_tcp_xyz: [0.12, 0.0, 0.0]
     tip_to_tcp_rpy: [0.0, 0.0, 0.0]
-    object_to_tcp_xyz: [0.000734246038, -0.001457943306, 0.004333127084]
-    object_to_tcp_rpy: [0.0, 0.0, 0.0]
-    storage_xyz: [0.158229722978, 0.307576469702, 0.469753348775]
-    storage_rpy: [-0.002554603711, -0.799999883044, 1.100005357145]
+    object_to_tcp_xyz: [0.0, 0.0, 0.0]
+    object_to_tcp_rpy: [-3.139041892858582, -0.000000107428275, -0.000003732645167]
+    # 存矿位继承 engineer_mtc.yaml 中的 26 左存矿位，不单独覆盖。

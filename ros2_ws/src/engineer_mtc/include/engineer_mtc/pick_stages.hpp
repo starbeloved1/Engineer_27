@@ -25,6 +25,9 @@ std::unique_ptr<mtc::SerialContainer> createStage4(const PickContext &context);
 std::unique_ptr<mtc::SerialContainer> createStage5(const PickContext &context);
 std::unique_ptr<mtc::SerialContainer> createStage6(const PickContext &context);
 
+// 显式恢复机械臂与 base_link 的碰撞检查，保留 SRDF 中的连接处豁免。
+void protectArmBaseCollisions(const planning_scene::PlanningScenePtr &, const std::string &group);
+
 std::unique_ptr<mtc::stages::MoveTo> gripperMove(const PickContext &, bool close);
 std::unique_ptr<mtc::stages::MoveRelative> relativeMove(const PickContext &, const std::string &,
                                                         const Eigen::Vector3d &, double,

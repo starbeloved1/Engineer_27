@@ -40,6 +40,7 @@ class IcpRegistrationNode : public rclcpp::Node
   cv::Matx33d camera_k_{cv::Matx33d::zeros()};
   vision_msgs::msg::Detection2DArray::ConstSharedPtr detections_;
   PointCloud::Ptr source_;
+  Eigen::Matrix4f ply_to_energy_{Eigen::Matrix4f::Identity()};
   std::vector<Eigen::Matrix4f> last_transforms_;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;

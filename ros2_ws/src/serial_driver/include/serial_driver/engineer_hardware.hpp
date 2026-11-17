@@ -39,6 +39,7 @@ private:
   void stopWorker();
   void ioLoop();
   void acceptFeedback(const Feedback &);
+  void acceptFeedbackLocked(const Feedback &);
   void publishStatus();
   void failLocked(const std::string &);
   void validatePositions(const JointValues &) const;
@@ -47,13 +48,15 @@ private:
   JointValues target_{};
   bool mock_ = true, active_ = false, received_ = false, faulted_ = false, require_stop_ = false;
   unsigned claimed_ = 0;
-  uint8_t mock_mode_ = 2;
+  std::atomic<uint8_t> mock_mode_{2};
   double receive_timeout_ = .1, startup_timeout_ = 3., tx_rate_ = 20., feedback_rate_ = 50.;
   int baud_ = 115200;
   std::string port_name_ = "/dev/ttyUSB0", error_;
   Feedback feedback_;
+  Feedback mock_feedback_;
   uint64_t epoch_ = 0, read_epoch_ = 0, target_epoch_ = 0, rx_frames_ = 0, tx_frames_ = 0;
   Clock::time_point last_rx_{};
+  Clock::time_point last_mock_tx_{};
   builtin_interfaces::msg::Time feedback_stamp_;
   SerialPort port_;
   FeedbackParser parser_;

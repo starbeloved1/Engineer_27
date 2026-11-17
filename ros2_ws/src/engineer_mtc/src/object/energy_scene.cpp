@@ -50,7 +50,8 @@ EnergyScene::EnergyScene(const std::string &path, const std::string &id, const s
 // 在planningscene的指定位置加入矿
 bool EnergyScene::put(const Eigen::Isometry3d &pose)
 {
-  if (attached())
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (!scene_.getAttachedObjects({model_.id}).empty())
     return false;
   auto object = model_;
   object.pose = transformPose(pose);
@@ -60,12 +61,14 @@ bool EnergyScene::put(const Eigen::Isometry3d &pose)
 // 删除矿
 void EnergyScene::remove()
 {
+  std::lock_guard<std::mutex> lock(mutex_);
   scene_.removeCollisionObjects({model_.id});
 }
 
 // 查询矿和机械臂的附着情况
 bool EnergyScene::attached()
 {
+  std::lock_guard<std::mutex> lock(mutex_);
   return !scene_.getAttachedObjects({model_.id}).empty();
 }
 

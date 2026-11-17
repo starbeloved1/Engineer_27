@@ -28,10 +28,11 @@ void MtcNode::updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr 
   }
   if (busy_ || plan_valid_)
   {
-    bool invalid = changed;
-    try { checkHardware(); } catch (const std::exception &) { invalid = true; }
-    if (invalid)
+    std::string reason = changed ? "硬件控制权发生变化" : "";
+    try { checkHardware(); } catch (const std::exception &e) { reason = e.what(); }
+    if (!reason.empty() && !cancel_requested_)
     {
+      RCLCPP_WARN(get_logger(), "硬件监测取消任务: %s", reason.c_str());
       Trigger::Response response;
       cancel(response);
     }

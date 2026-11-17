@@ -7,7 +7,9 @@ std::unique_ptr<mtc::SerialContainer> createStage5(const PickContext &c)
   
   // 建立直线段
   {
-  stage->insert(relativeMove(c, "lower to storage", -c.settings.storage_energy.linear().col(2),c.settings.storage_distance, true));
+  stage->insert(relativeMove(c, "lower to storage",
+                            -c.settings.storage_energy.linear() * c.settings.extraction_axis,
+                            c.settings.storage_distance, true));
   }
 
   // ik求解并向下放入
@@ -40,12 +42,7 @@ std::unique_ptr<mtc::SerialContainer> createStage5(const PickContext &c)
                              c.settings.retreat_distance));
   }
 
-  // 恢复碰撞检查
-  {
-  auto contact = std::make_unique<mtc::stages::ModifyPlanningScene>("restore gripper collision");
-  contact->allowCollisions(c.settings.object_id, c.settings.touch_links, false);
-  stage->insert(std::move(contact));
-  }
+  // 对齐 26：存矿后不恢复接触碰撞限制，下一阶段清理场景后回位。
 
   return stage;
 }

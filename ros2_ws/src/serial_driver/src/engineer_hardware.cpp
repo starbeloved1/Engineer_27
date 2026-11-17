@@ -102,6 +102,16 @@ Callback EngineerHardware::on_configure(const rclcpp_lifecycle::State &)
       feedback_ = Feedback();
       feedback_.position = initial_;
       target_ = initial_;
+      if (mock_)
+      {
+        mock_feedback_ = Feedback();
+        mock_feedback_.position = initial_;
+        mock_feedback_.grip = encodeCommand(initial_)[14];
+        mock_feedback_.grip_state = 1;
+        mock_feedback_.mode = mock_mode_.load();
+        acceptFeedbackLocked(mock_feedback_);
+        last_mock_tx_ = Clock::time_point();
+      }
     }
     running_ = true;
     worker_ = std::thread(&EngineerHardware::ioLoop, this);
@@ -174,7 +184,7 @@ std::vector<hardware_interface::CommandInterface> EngineerHardware::export_comma
 bool EngineerHardware::freshLocked() const
 {
   return received_ && !faulted_ &&
-         std::chrono::duration<double>(Clock::now() - last_rx_).count() <= receive_timeout_;
+         (mock_ || std::chrono::duration<double>(Clock::now() - last_rx_).count() <= receive_timeout_);
 }
 bool EngineerHardware::enabledLocked() const
 {
@@ -219,7 +229,19 @@ Result EngineerHardware::perform_command_mode_switch(const std::vector<std::stri
 Result EngineerHardware::read(const rclcpp::Time &, const rclcpp::Duration &)
 {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (!freshLocked()) return Result::ERROR;
+  // 模拟反馈随控制循环生成，不依赖 ROS 通信线程的调度，不套用串口掉线判定。
+  if (mock_ && !faulted_ &&
+      (mock_feedback_.mode != mock_mode_.load() ||
+       std::chrono::duration<double>(Clock::now() - last_rx_).count() >= 1 / feedback_rate_))
+  {
+    mock_feedback_.mode = mock_mode_.load();
+    acceptFeedbackLocked(mock_feedback_);
+  }
+  if (!freshLocked())
+  {
+    if (!faulted_) failLocked("读取时有效串口反馈已超时");
+    return Result::ERROR;
+  }
   position_ = feedback_.position; velocity_ = feedback_.velocity;
   if (read_epoch_ != epoch_ || feedback_.mode != 2 || require_stop_)
   {
@@ -231,13 +253,30 @@ Result EngineerHardware::read(const rclcpp::Time &, const rclcpp::Duration &)
 Result EngineerHardware::write(const rclcpp::Time &, const rclcpp::Duration &)
 {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (!freshLocked()) return Result::ERROR;
+  if (!freshLocked())
+  {
+    if (!faulted_) failLocked("发送前有效串口反馈已超时");
+    return Result::ERROR;
+  }
   if (!enabledLocked() || read_epoch_ != epoch_) return Result::OK;
   try
   {
     validatePositions(command_);
-    encodeCommand(command_);
+    const auto frame = encodeCommand(command_);
     target_ = command_; target_epoch_ = epoch_;
+    if (mock_ && mock_mode_.load() == 2 &&
+        std::chrono::duration<double>(Clock::now() - last_mock_tx_).count() >= 1 / tx_rate_)
+    {
+      // 虚拟 MCU 在 write() 采纳目标，下一次 read() 返回量化后的实际状态。
+      std::array<uint8_t, kRxSize> echo{};
+      echo[0] = 0x55; echo[1] = 0xaa;
+      std::copy(frame.begin() + 2, frame.begin() + 14, echo.begin() + 2);
+      echo[26] = frame[14]; echo[27] = 1; echo[28] = mock_mode_.load();
+      echo[29] = checksum(echo.data() + 2, 27); echo[30] = 0x0d;
+      decodeFeedback(echo.data(), mock_feedback_);
+      last_mock_tx_ = Clock::now();
+      ++tx_frames_;
+    }
     return Result::OK;
   }
   catch (const std::exception &e) { failLocked(e.what()); return Result::ERROR; }
@@ -251,6 +290,10 @@ void EngineerHardware::failLocked(const std::string &why)
 void EngineerHardware::acceptFeedback(const Feedback &f)
 {
   std::lock_guard<std::mutex> lock(mutex_);
+  acceptFeedbackLocked(f);
+}
+void EngineerHardware::acceptFeedbackLocked(const Feedback &f)
+{
   if (faulted_) return;
   try { validatePositions(f.position); }
   catch (const std::exception &e) { failLocked(e.what()); return; }
@@ -290,24 +333,15 @@ void EngineerHardware::ioLoop()
 {
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(node_);
-  auto next_tx = Clock::now(), next_feedback = next_tx, next_status = next_tx;
+  auto next_tx = Clock::now(), next_status = next_tx;
   const auto tx_period = std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(1 / tx_rate_));
   const auto feedback_period = std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(1 / feedback_rate_));
-  Feedback mock_feedback;
-  mock_feedback.position = initial_;
-  if (mock_) mock_feedback.grip = encodeCommand(initial_)[14];
   try
   {
     while (running_ && rclcpp::ok())
     {
       executor.spin_some(std::chrono::milliseconds(1));
       const auto now = Clock::now();
-      if (mock_ && now >= next_feedback)
-      {
-        mock_feedback.mode = mock_mode_; mock_feedback.grip_state = 1;
-        acceptFeedback(mock_feedback);
-        next_feedback = now + feedback_period;
-      }
       if (!mock_)
       {
         const auto data = port_.readAvailable();
@@ -317,8 +351,8 @@ void EngineerHardware::ioLoop()
       bool send = false;
       {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (received_ && !faulted_ && !freshLocked()) failLocked("有效反馈超时，禁止输出；需重启硬件链路");
-        if (now >= next_tx)
+        if (!mock_ && received_ && !faulted_ && !freshLocked()) failLocked("有效反馈超时，禁止输出；需重启硬件链路");
+        if (!mock_ && now >= next_tx)
         {
           send = enabledLocked() && target_epoch_ == epoch_;
           if (send) frame = encodeCommand(target_);
@@ -327,17 +361,7 @@ void EngineerHardware::ioLoop()
       }
       if (send)
       {
-        if (mock_)
-        {
-          // 模拟也经过相同的协议编码，保留 0.01° 与 uint8 开合量的量化。
-          std::array<uint8_t, kRxSize> echo{};
-          echo[0] = 0x55; echo[1] = 0xaa;
-          std::copy(frame.begin() + 2, frame.begin() + 14, echo.begin() + 2);
-          echo[26] = frame[14]; echo[27] = 1; echo[28] = mock_mode_;
-          echo[29] = checksum(echo.data() + 2, 27); echo[30] = 0x0d;
-          decodeFeedback(echo.data(), mock_feedback);
-        }
-        else port_.writeFrame(frame.data(), frame.size());
+        port_.writeFrame(frame.data(), frame.size());
         std::lock_guard<std::mutex> lock(mutex_);
         ++tx_frames_;
       }

@@ -70,6 +70,21 @@ IcpRegistrationNode::IcpRegistrationNode(const rclcpp::NodeOptions& options)
   const auto pose_topic = declare_parameter<std::string>("pose_topic", "/vision/icp/object_poses");
   const auto raw_pose_topic =
       declare_parameter<std::string>("raw_pose_topic", "/vision/icp/raw_object_poses");
+  const auto energy_xyz = declare_parameter<std::vector<double>>(
+      "ply_to_energy_xyz", {.000734246038, -.001457943306, .004333127084});
+  const auto energy_rpy = declare_parameter<std::vector<double>>(
+      "ply_to_energy_rpy", {3.139041892859, -.000000116949, -.000003732359});
+  if (energy_xyz.size() != 3 || energy_rpy.size() != 3 ||
+      !std::all_of(energy_xyz.begin(), energy_xyz.end(), [](double v) { return std::isfinite(v); }) ||
+      !std::all_of(energy_rpy.begin(), energy_rpy.end(), [](double v) { return std::isfinite(v); }))
+    throw std::invalid_argument("ply_to_energy_xyz/rpy 须为三个有限数，单位 m/rad");
+  // T_PLY_energy：仅在对外发布位姿时应用；配准、历史初值及点云后处理仍使用 PLY。
+  ply_to_energy_.block<3, 3>(0, 0) =
+      (Eigen::AngleAxisd(energy_rpy[2], Eigen::Vector3d::UnitZ()) *
+       Eigen::AngleAxisd(energy_rpy[1], Eigen::Vector3d::UnitY()) *
+       Eigen::AngleAxisd(energy_rpy[0], Eigen::Vector3d::UnitX())).toRotationMatrix().cast<float>();
+  ply_to_energy_.block<3, 1>(0, 3) =
+      Eigen::Vector3d(energy_xyz[0], energy_xyz[1], energy_xyz[2]).cast<float>();
   target_frame_ = declare_parameter<std::string>("target_frame", "camera_link");
   max_data_age_ = declare_parameter<double>("max_data_age", 1.5);
   publish_tf_ = declare_parameter<bool>("publish_tf", true);
@@ -350,7 +365,7 @@ void IcpRegistrationNode::receiveCloud(const sensor_msgs::msg::PointCloud2::Cons
     if (!result.accepted)
       continue;
     const auto raw_pose = poseFromTransform(result.transform);
-    raw_poses.poses.push_back(raw_pose);
+    raw_poses.poses.push_back(poseFromTransform(result.transform * ply_to_energy_));
     candidates.push_back({index, zAxisPose(raw_pose)});
     PointCloud aligned;
     pcl::transformPointCloud(*source_, aligned, result.transform);
@@ -362,7 +377,9 @@ void IcpRegistrationNode::receiveCloud(const sensor_msgs::msg::PointCloud2::Cons
   constraints_->apply(candidates);
   for (const auto& candidate : candidates)
   {
-    poses.poses.push_back(candidate.pose);
+    const auto energy_pose =
+        poseFromTransform(transformFromPose(candidate.pose) * ply_to_energy_);
+    poses.poses.push_back(energy_pose);
     PointCloud aligned;
     pcl::transformPointCloud(*source_, aligned, transformFromPose(candidate.pose));
     aligned_all += aligned;
@@ -371,10 +388,10 @@ void IcpRegistrationNode::receiveCloud(const sensor_msgs::msg::PointCloud2::Cons
       geometry_msgs::msg::TransformStamped transform;
       transform.header = header;
       transform.child_frame_id = "object_" + std::to_string(candidate.detection_idx);
-      transform.transform.translation.x = candidate.pose.position.x;
-      transform.transform.translation.y = candidate.pose.position.y;
-      transform.transform.translation.z = candidate.pose.position.z;
-      transform.transform.rotation = candidate.pose.orientation;
+      transform.transform.translation.x = energy_pose.position.x;
+      transform.transform.translation.y = energy_pose.position.y;
+      transform.transform.translation.z = energy_pose.position.z;
+      transform.transform.rotation = energy_pose.orientation;
       tf_broadcaster_->sendTransform(transform);
     }
   }

@@ -14,6 +14,11 @@ icp_registration:
     raw_aligned_cloud_topic: /vision/icp/raw_aligned_cloud
     raw_pose_topic: /vision/icp/raw_object_poses # pose
 
+    # 两个 PoseArray 与 object_* TF 均表示 URDF energy_link；点云仍按 PLY 配准变换绘制。
+    # T_PLY_energy：将 energy_link 坐标转换到 PLY 模型坐标，单位 m / rad。
+    ply_to_energy_xyz: [0.000734246038, -0.001457943306, 0.004333127084]
+    ply_to_energy_rpy: [3.139041892859, -0.000000116949, -0.000003732359]
+
     max_icp_iter: 120 # PCL 最大迭代次数
     voxel_size: 0.006 # 6mm 体素下采样
     max_corr_dist: 1.0 # 最大对应距离< xm

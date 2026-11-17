@@ -6,6 +6,29 @@
 namespace engineer_mtc
 {
 
+void protectArmBaseCollisions(const planning_scene::PlanningScenePtr &scene,
+                             const std::string &group)
+{
+  const auto &model = scene->getRobotModel();
+  auto &acm = scene->getAllowedCollisionMatrixNonConst();
+  for (const auto &link : model->getJointModelGroup(group)->getLinkModelNamesWithCollisionGeometry())
+  {
+    if (link == "base_link")
+      continue;
+    bool allowed = false;
+    if (const auto &srdf = model->getSRDF())
+      for (const auto &pair : srdf->getDisabledCollisionPairs())
+        if ((pair.link1_ == "base_link" && pair.link2_ == link) ||
+            (pair.link2_ == "base_link" && pair.link1_ == link))
+        {
+          allowed = true;
+          break;
+        }
+    // 显式条目优先于宽松默认值，也覆盖上一轮任务可能遗留的放宽。
+    acm.setEntry("base_link", link, allowed);
+  }
+}
+
 //gripperMove()：构建开爪或闭爪动作
 std::unique_ptr<mtc::stages::MoveTo> gripperMove(const PickContext &c, bool close)
 {
@@ -75,7 +98,7 @@ std::unique_ptr<mtc::Task> createPregraspTask(const rclcpp::Node::SharedPtr &nod
   task->setTimeout(s.planning_time * 6);
   }
 
-  // 建立规划起点并且检查状态
+  // 对齐 26：碰撞策略由后续场景修改阶段设置，起点只检查关节范围。
   {
   auto current = std::make_unique<mtc::stages::CurrentState>("current state");
   auto start = std::make_unique<mtc::stages::PredicateFilter>("check current state", std::move(current));
@@ -83,9 +106,9 @@ std::unique_ptr<mtc::Task> createPregraspTask(const rclcpp::Node::SharedPtr &nod
       [](const mtc::SolutionBase &solution, std::string &comment)
       {
         const auto &scene = solution.end()->scene();
-        if (!scene->getCurrentState().satisfiesBounds() || scene->isStateColliding())
+        if (!scene->getCurrentState().satisfiesBounds())
         {
-          comment = "当前状态超限或存在碰撞";
+          comment = "当前状态超限";
           return false;
         }
         return true;
@@ -115,7 +138,7 @@ std::unique_ptr<mtc::Task> createPregraspTask(const rclcpp::Node::SharedPtr &nod
   // 前置计算，存矿时位姿
   {
   const Eigen::Isometry3d grasp_tip = targets.grasp_tcp_base * s.tip_to_tcp.inverse();
-  const Eigen::Isometry3d tip_energy = grasp_tip.inverse() * targets.object_base * s.object_to_energy;
+  const Eigen::Isometry3d tip_energy = grasp_tip.inverse() * targets.object_base;
   c.storage_tip = s.storage_energy * tip_energy.inverse();
   }
   

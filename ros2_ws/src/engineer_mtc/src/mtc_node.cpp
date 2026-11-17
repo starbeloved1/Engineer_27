@@ -47,17 +47,15 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   if (execution_mode_ != "auto" && execution_mode_ != "step")
     throw std::invalid_argument("execution_mode 须为 auto 或 step");
   const auto zero = std::vector<double>{0, 0, 0};
-  object_to_tcp_ = xyzRpyTransform(parameter(*this, "object_to_tcp_xyz", zero),
-                                   parameter(*this, "object_to_tcp_rpy", zero));
+  object_to_tcp_ = xyzRpyTransform(
+      parameter(*this, "object_to_tcp_xyz",
+                std::vector<double>{-.000734251986318, -.001468988580768, .004329394048142}),
+      parameter(*this, "object_to_tcp_rpy",
+                std::vector<double>{-3.139041892858582, -.000000107428275, -.000003732645167}));
   settings_.tip_to_tcp = xyzRpyTransform(parameter(*this, "tip_to_tcp_xyz", zero),
                                          parameter(*this, "tip_to_tcp_rpy", zero));
-  settings_.object_to_energy = xyzRpyTransform(
-      parameter(*this, "object_to_energy_xyz",
-                std::vector<double>{.000734246038, -.001457943306, .004333127084}),
-      parameter(*this, "object_to_energy_rpy",
-                std::vector<double>{3.139041892859, -.000000116949, -.000003732359}));
-  parameter(*this, "storage_xyz", std::vector<double>{.25, .2, .35});
-  parameter(*this, "storage_rpy", zero);
+  parameter(*this, "storage_xyz", std::vector<double>{-.277770966183247, .186945142397677, .19});
+  parameter(*this, "storage_rpy", std::vector<double>{3.141592653589793, 0., 2.09439510});
   auto axis = [this](const char *key, const std::vector<double> &fallback)
   {
     const auto v = parameter(*this, key, fallback);
@@ -69,7 +67,8 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
     return a.normalized().eval();
   };
   settings_.approach_axis = axis("approach_axis", {1, 0, 0});
-  settings_.extraction_axis = axis("extraction_axis", {0, 0, 1});
+  settings_.extraction_axis = axis("extraction_axis",
+                                 {.000000116949, .002550757964758, -.999996746811604});
   settings_.extraction_distance = parameter(*this, "extraction_distance", .10);
   settings_.storage_distance = parameter(*this, "storage_distance", .10);
   settings_.retreat_distance = parameter(*this, "retreat_distance", .07);
@@ -273,11 +272,12 @@ Eigen::Isometry3d MtcNode::targetInBase(const geometry_msgs::msg::PoseStamped &t
 
 void MtcNode::previewTarget()
 {
-  if (busy_ || plan_valid_)
+  if ((busy_ || plan_valid_) && !cancel_requested_)
   {
     try { checkHardware(); }
-    catch (const std::exception &)
+    catch (const std::exception &e)
     {
+      RCLCPP_WARN(get_logger(), "硬件监测取消任务: %s", e.what());
       Trigger::Response response;
       cancel(response);
     }
@@ -315,7 +315,7 @@ void MtcNode::previewTarget()
   try
   {
     const auto target = selectTarget(manual);
-    valid = energy_->put(targetInBase(target) * settings_.object_to_energy);
+    valid = energy_->put(targetInBase(target));
   }
   catch (const std::exception &)
   {
@@ -407,7 +407,7 @@ void MtcNode::plan(bool manual, Trigger::Response &response)
     owned_ = true;
     {
       std::lock_guard<std::mutex> l(scene_mutex_);
-      if (!energy_->put(targets.object_base * settings_.object_to_energy))
+      if (!energy_->put(targets.object_base))
         throw std::runtime_error("添加矿到场景失败");
     }
     {

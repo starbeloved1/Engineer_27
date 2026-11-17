@@ -62,16 +62,13 @@ for argument in "$@"; do
   esac
 done
 
-# 同一工作区、同一 ROS 域只允许一套视觉流程，提前阻止相机和端口争用
-if [[ "$mode" == vision ]]; then
-  # 统一视觉启动目录；各包自行解析其配置中的资产路径
-  cd "$engineer_root"
-  mkdir -p "$engineer_root/.cache"
-  exec {vision_lock_fd}>"$engineer_root/.cache/vision_${ROS_DOMAIN_ID:-0}.lock"
-  if ! flock -n "$vision_lock_fd"; then
-    echo "本工作区 ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0} 的视觉流程已经在运行，请先在原终端按 Ctrl+C；本次未启动节点。" >&2
-    exit 1
-  fi
+# 同一工作区、同一 ROS 域中，每种模式只启动一套，避免同名控制器／状态话题冲突。
+cd "$engineer_root"
+mkdir -p "$engineer_root/.cache"
+exec {pipeline_lock_fd}>"$engineer_root/.cache/${mode}_${ROS_DOMAIN_ID:-0}.lock"
+if ! flock -n "$pipeline_lock_fd"; then
+  echo "本工作区 ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0} 的 ${mode} 流程已经在运行，请先在原终端按 Ctrl+C；本次未启动节点。" >&2
+  exit 1
 fi
 
 if [[ ! -f "$engineer_root/ros2_ws/install/setup.bash" ]]; then
