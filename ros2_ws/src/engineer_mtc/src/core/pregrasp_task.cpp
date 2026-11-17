@@ -54,8 +54,8 @@ std::unique_ptr<mtc::Task> createPregraspTask(const rclcpp::Node::SharedPtr &nod
     throw std::invalid_argument("完整 pick 要求 include_approach=true");
   
   // 创建task加载模型
-  {
   auto task = std::make_unique<mtc::Task>("engineer_mtc");
+  {
   task->stages()->setName("energy: complete pick");
   task->loadRobotModel(node);
   }
@@ -94,14 +94,13 @@ std::unique_ptr<mtc::Task> createPregraspTask(const rclcpp::Node::SharedPtr &nod
   }
 
   // 创建pipline，cartesian和joints三个规划器，初始化打包
-  {
   PickContext c{s,
                 targets,
                 std::make_shared<mtc::solvers::PipelinePlanner>(node, s.pipeline),
                 std::make_shared<mtc::solvers::CartesianPath>(),
                 std::make_shared<mtc::solvers::JointInterpolationPlanner>(),
                 Eigen::Isometry3d::Identity()};
-
+  {
   c.pipeline->setPlannerId(s.planner_id);
   c.pipeline->setProperty("num_planning_attempts", s.max_ik_solutions);
   for (const auto &planner :

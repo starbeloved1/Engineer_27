@@ -6,7 +6,38 @@
 
 namespace engineer_mtc
 {
-  
+void MtcNode::checkHardware()
+{
+  std::lock_guard<std::mutex> lock(input_mutex_);
+  if (!hardware_ || !hardware_->feedback_valid || hardware_->faulted ||
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - hardware_received_).count() > hardware_timeout_ ||
+      std::abs((now() - rclcpp::Time(hardware_->header.stamp)).seconds()) > hardware_timeout_)
+    throw std::runtime_error("硬件反馈失效或超时");
+  if (hardware_->mode != 2 || !hardware_->tx_enabled || (hardware_->gripper_state & 6))
+    throw std::runtime_error("当前未取得自动取矿控制权，或夹爪存在故障／堵转");
+}
+
+void MtcNode::updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr message)
+{
+  bool changed;
+  {
+    std::lock_guard<std::mutex> lock(input_mutex_);
+    changed = hardware_ && hardware_->control_epoch != message->control_epoch;
+    hardware_ = message;
+    hardware_received_ = std::chrono::steady_clock::now();
+  }
+  if (busy_ || plan_valid_)
+  {
+    bool invalid = changed;
+    try { checkHardware(); } catch (const std::exception &) { invalid = true; }
+    if (invalid)
+    {
+      Trigger::Response response;
+      cancel(response);
+    }
+  }
+}
+
 void MtcNode::prepareExecution()
 {
   std::array<bool, 6> found{};
@@ -43,6 +74,25 @@ void MtcNode::prepareExecution()
 
 void MtcNode::checkStart(const moveit_task_constructor_msgs::msg::Solution &solution)
 {
+  checkHardware();
+  // 阶段开始前检查整段轨迹，避免中途才发现 continuous 关节越过协议 ±180°。
+  constexpr double pi = 3.14159265358979323846;
+  for (const auto &segment : solution.sub_trajectory)
+  {
+    const auto &trajectory = segment.trajectory.joint_trajectory;
+    for (const auto &point : trajectory.points)
+    {
+      if (point.positions.size() != trajectory.joint_names.size())
+        throw std::runtime_error("关节轨迹位置数量不匹配");
+      for (size_t i = 0; i < point.positions.size(); ++i)
+      {
+        const double q = point.positions[i];
+        const bool gripper = trajectory.joint_names[i] == "gripper_state_joint";
+        if (!std::isfinite(q) || (gripper ? (q < -1e-10 || q > .01 + 1e-10) : std::abs(q) > pi + 1e-10))
+          throw std::runtime_error("轨迹超出串口位置范围: " + trajectory.joint_names[i]);
+      }
+    }
+  }
   sensor_msgs::msg::JointState::ConstSharedPtr current;
   {
     std::lock_guard<std::mutex> l(input_mutex_);
@@ -73,6 +123,9 @@ void MtcNode::checkStart(const moveit_task_constructor_msgs::msg::Solution &solu
 bool MtcNode::gripperAt(bool closed)
 {
   std::lock_guard<std::mutex> l(input_mutex_);
+  if (!hardware_ || !hardware_->feedback_valid || hardware_->faulted ||
+      (hardware_->gripper_state & 7) != 1 ||
+      std::abs((now() - rclcpp::Time(hardware_->header.stamp)).seconds()) > hardware_timeout_) return false;
   if (!joints_ || (now() - rclcpp::Time(joints_->header.stamp)).seconds() > max_joint_age_)
     return false;
   for (size_t i = 0; i < joints_->name.size() && i < joints_->position.size(); ++i)

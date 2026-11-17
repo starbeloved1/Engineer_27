@@ -1,5 +1,4 @@
-# 仅用于 GenericSystem 模拟演示；不是相机、夹爪 TCP 或车载存矿标定。
-# demo_pick 通过 FK 生成目标并设置本次模拟存矿位。
+# 仅用于 serial_driver 模拟演示
 engineer_mtc:
   ros__parameters:
     velocity_scaling: 0.5

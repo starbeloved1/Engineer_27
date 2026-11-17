@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="urdf">
+  <xacro:arg name="hardware_config" default="$(find serial_driver)/config/serial_driver.yaml"/>
+  <xacro:include filename="$(find moveit_config)/config/arm.urdf.xacro"/>
+  <xacro:property name="hardware" value="${xacro.load_yaml('$(arg hardware_config)')}"/>
+  <xacro:macro name="arm_joint" params="index">
+    <joint name="link_${index + 1}_joint">
+      <command_interface name="position">
+        <param name="min">${hardware['joint_min_degrees'][index] * pi / 180.0}</param>
+        <param name="max">${hardware['joint_max_degrees'][index] * pi / 180.0}</param>
+      </command_interface>
+      <state_interface name="position"><param name="initial_value">${hardware['mock_initial_positions'][index]}</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </xacro:macro>
+  <ros2_control name="Engineer27System" type="system">
+    <hardware>
+      <plugin>serial_driver/EngineerHardware</plugin>
+      <param name="use_mock_hardware">${'true' if hardware['use_mock_hardware'] else 'false'}</param>
+      <param name="serial_port">${hardware['serial_port']}</param>
+      <param name="baud_rate">${hardware['baud_rate']}</param>
+      <param name="tx_rate">${hardware['tx_rate']}</param>
+      <param name="feedback_rate">${hardware['feedback_rate']}</param>
+      <param name="receive_timeout_ms">${hardware['receive_timeout_ms']}</param>
+      <param name="startup_timeout_ms">${hardware['startup_timeout_ms']}</param>
+      <param name="mock_mode">${hardware['mock_mode']}</param>
+    </hardware>
+    <xacro:arm_joint index="${0}"/><xacro:arm_joint index="${1}"/>
+    <xacro:arm_joint index="${2}"/><xacro:arm_joint index="${3}"/>
+    <xacro:arm_joint index="${4}"/><xacro:arm_joint index="${5}"/>
+    <joint name="gripper_state_joint">
+      <command_interface name="position"><param name="min">0</param><param name="max">0.01</param></command_interface>
+      <state_interface name="position"><param name="initial_value">${hardware['mock_initial_positions'][6]}</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+</robot>

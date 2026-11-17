@@ -1,5 +1,5 @@
 # 读取方：MoveIt 执行管理器。这里只描述下游控制器 Action 的名称和关节映射，
-# 不创建控制器；真正的 ros2_control 配置位于 sim_controller/config/ros2_controllers.yaml。
+# 不创建控制器；真正的 ros2_control 配置位于 serial_driver/config/ros2_controllers.yaml。
 moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
 moveit_simple_controller_manager:
   controller_names: [arm_controller, gripper_controller]

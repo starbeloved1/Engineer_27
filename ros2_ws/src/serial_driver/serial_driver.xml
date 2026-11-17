@@ -1,0 +1,6 @@
+<library path="engineer_hardware">
+  <class name="serial_driver/EngineerHardware" type="serial_driver::EngineerHardware"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>六轴机械臂与夹爪的真实串口／模拟硬件接口</description>
+  </class>
+</library>

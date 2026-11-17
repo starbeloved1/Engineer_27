@@ -14,8 +14,8 @@ std::unique_ptr<mtc::SerialContainer> createStage2(const PickContext &c)
   }
 
   // 生成抓取目标
-  {
   auto pose = std::make_unique<mtc::stages::GeneratePose>("grasp pose");
+  {
   pose->setMonitoredStage(c.open_state);
   geometry_msgs::msg::PoseStamped goal;
   goal.header.frame_id = c.settings.base_frame;

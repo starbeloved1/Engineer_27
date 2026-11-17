@@ -6,11 +6,12 @@ engineer_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 usage() {
   cat <<'HELP'
 用法：./run.sh [mode:=mtc|vision] [use_rviz:=true|false]
-               [controller_config:=FILE] [sim_config:=FILE] [mtc_config:=FILE]
+               [hardware_config:=FILE] [controller_config:=FILE] [sim_config:=FILE] [mtc_config:=FILE]
                [start_camera:=true|false] [start_detector:=true|false] [start_icp:=true|false] [start_bridge:=true|false]
                [camera_config:=FILE] [vision_config:=FILE] [foxglove_config:=FILE]
                [yolo_python:=FILE]
-默认 mtc：启动模拟控制、MoveIt、engineer_mtc 和任务 RViz；只规划预览，不执行运动。
+默认 mtc：启动硬件控制、MoveIt、engineer_mtc 和任务 RViz；启动不自动执行运动。
+serial_driver/config/serial_driver.yaml 的 use_mock_hardware 选择模拟(true)/真实串口(false)，默认模拟。
 机械臂 RViz 默认由 sim_controller/config/sim_controller.yaml 控制，use_rviz 可临时覆盖。
 vision：启动 vision_nodes 分组下的 D435、YOLO/叠框图像、PCL ICP、Bridge 和录像；请先关闭 RealSense Viewer。
 vision_pcl：保留为 vision 的兼容别名；各节点加载各自包内的 config。
@@ -47,6 +48,7 @@ for argument in "$@"; do
     start_icp:=true|start_icp:=false) start_icp="${argument#*:=}" ;;
     start_bridge:=true|start_bridge:=false) start_bridge="${argument#*:=}" ;;
     controller_config:=?*) controller_arguments+=("$argument") ;;
+    hardware_config:=?*) controller_arguments+=("$argument") ;;
     sim_config:=?*) controller_arguments+=("$argument") ;;
     mtc_config:=?*) mtc_arguments=("$argument") ;;
     camera_config:=?*) camera_arguments+=("$argument"); recorder_arguments+=("$argument") ;;

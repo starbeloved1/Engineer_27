@@ -41,6 +41,7 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
     throw std::invalid_argument("完整 pick 要求 include_approach=true");
   max_target_age_ = parameter(*this, "max_target_age", 1.5);
   max_joint_age_ = parameter(*this, "max_joint_age", 1.0);
+  hardware_timeout_ = parameter(*this, "hardware_status_timeout", .1);
   target_index_ = parameter(*this, "target_index", 0);
   execution_mode_ = text("execution_mode", "auto");
   if (execution_mode_ != "auto" && execution_mode_ != "step")
@@ -77,7 +78,7 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   settings_.object_id = text("object_id", "energy");
   for (double v :
        {settings_.planning_time, settings_.distance, settings_.cartesian_step, max_target_age_,
-        max_joint_age_, settings_.velocity_scale, settings_.acceleration_scale,
+        max_joint_age_, hardware_timeout_, settings_.velocity_scale, settings_.acceleration_scale,
         settings_.extraction_distance, settings_.storage_distance, settings_.retreat_distance})
     if (!std::isfinite(v) || v <= 0)
       throw std::invalid_argument("时间、距离及缩放须为有限正数");
@@ -116,6 +117,9 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   joints_sub_ = create_subscription<sensor_msgs::msg::JointState>(
       "/joint_states", rclcpp::SensorDataQoS(),
       std::bind(&MtcNode::updateJoints, this, std::placeholders::_1));
+  hardware_sub_ = create_subscription<serial_driver::msg::HardwareStatus>(
+      "/serial_driver/status", qos,
+      std::bind(&MtcNode::updateHardware, this, std::placeholders::_1));
   service_group_ = create_callback_group(rclcpp::CallbackGroupType::Reentrant);
   auto service = [this](const std::string &name, auto callback)
   {
@@ -187,9 +191,13 @@ void MtcNode::publishStatus()
 
 void MtcNode::updateJoints(sensor_msgs::msg::JointState::ConstSharedPtr m)
 {
+  bool gripper_confirmed = false;
   {
     std::lock_guard<std::mutex> l(input_mutex_);
     joints_ = m;
+    gripper_confirmed = hardware_ && hardware_->feedback_valid && !hardware_->faulted &&
+        (hardware_->gripper_state & 7) == 1 &&
+        std::abs((now() - rclcpp::Time(hardware_->header.stamp)).seconds()) <= hardware_timeout_;
   }
   const double age = (now() - rclcpp::Time(m->header.stamp)).seconds();
   if (age < -.1 || age > max_joint_age_)
@@ -198,7 +206,8 @@ void MtcNode::updateJoints(sensor_msgs::msg::JointState::ConstSharedPtr m)
     if (m->name[i] == "gripper_state_joint")
     {
       const double p = m->position[i];
-      const bool known = std::isfinite(p) && (std::abs(p) < 1e-4 || std::abs(p - .01) < 1e-4);
+      const bool known = gripper_confirmed && std::isfinite(p) &&
+                         (std::abs(p) < 1e-4 || std::abs(p - .01) < 1e-4);
       bool changed;
       {
         std::lock_guard<std::mutex> l(state_mutex_);
@@ -264,6 +273,15 @@ Eigen::Isometry3d MtcNode::targetInBase(const geometry_msgs::msg::PoseStamped &t
 
 void MtcNode::previewTarget()
 {
+  if (busy_ || plan_valid_)
+  {
+    try { checkHardware(); }
+    catch (const std::exception &)
+    {
+      Trigger::Response response;
+      cancel(response);
+    }
+  }
   bool fresh = false;
   {
     std::lock_guard<std::mutex> l(input_mutex_);

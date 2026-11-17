@@ -11,6 +11,7 @@
 #include <mutex>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <serial_driver/msg/hardware_status.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/u_int8.hpp>
 #include <std_srvs/srv/trigger.hpp>
@@ -45,6 +46,8 @@ private:
   void cancel(Trigger::Response &response);
   void checkStart(const moveit_task_constructor_msgs::msg::Solution &solution);
   bool gripperAt(bool closed);
+  void checkHardware();
+  void updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr message);
   TaskSettings settings_;
   Eigen::Isometry3d object_to_tcp_;
   double max_target_age_, max_joint_age_;
@@ -56,6 +59,9 @@ private:
   geometry_msgs::msg::PoseArray::ConstSharedPtr vision_;
   geometry_msgs::msg::PoseStamped::ConstSharedPtr manual_;
   sensor_msgs::msg::JointState::ConstSharedPtr joints_;
+  serial_driver::msg::HardwareStatus::ConstSharedPtr hardware_;
+  double hardware_timeout_ = .1;
+  std::chrono::steady_clock::time_point hardware_received_{};
   std::unique_ptr<moveit::task_constructor::Task> task_;
   std::array<moveit_task_constructor_msgs::msg::Solution, 6> stage_solutions_;
   size_t next_stage_ = 0;
@@ -71,6 +77,7 @@ private:
   rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr vision_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr manual_sub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joints_sub_;
+  rclcpp::Subscription<serial_driver::msg::HardwareStatus>::SharedPtr hardware_sub_;
   rclcpp::Service<Trigger>::SharedPtr plan_service_, manual_service_, execute_service_,
       next_service_, cancel_service_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr object_pub_, grasp_pub_,

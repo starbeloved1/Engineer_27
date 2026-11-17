@@ -1,0 +1,15 @@
+use_mock_hardware: true # true：模拟硬件；false：接真实 MCU。
+serial_port: /dev/ttyUSB0 
+baud_rate: 115200
+tx_rate: 20.0 # Hz，周期发送最新目标，不积压历史目标
+feedback_rate: 50.0 # Hz，模拟反馈及硬件状态话题频率
+receive_timeout_ms: 100.0 
+startup_timeout_ms: 3000.0 
+
+
+joint_min_degrees: [-180.0, -180.0, -180.0, -180.0, -180.0, -180.0]
+joint_max_degrees: [180.0, 180.0, 180.0, 180.0, 180.0, 180.0]
+
+# 以下参数仅用于模拟
+mock_mode: 2 # 1 手动；2 自动取矿；3 兑矿预留
+mock_initial_positions: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # 六轴 rad + 夹爪虚拟关节

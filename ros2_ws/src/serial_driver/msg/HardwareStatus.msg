@@ -1,0 +1,19 @@
+# header.stamp 是最近一帧有效反馈的接收时间；离线后不刷新该时间。
+std_msgs/Header header
+uint8 UNKNOWN=0
+uint8 MANUAL=1
+uint8 PICK=2
+uint8 PLACE=3
+bool use_mock_hardware
+bool feedback_valid
+bool faulted
+bool tx_enabled
+uint8 mode
+uint8 gripper_position
+uint8 gripper_state
+# 每次模式变化递增，连续反馈不递增；用于清除上一次自动控制的轨迹。
+uint64 control_epoch
+uint64 rx_frames
+uint64 tx_frames
+uint64 rejected_frames
+string error

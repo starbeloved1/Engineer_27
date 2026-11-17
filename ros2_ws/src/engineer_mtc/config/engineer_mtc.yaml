@@ -4,6 +4,7 @@ engineer_mtc:
     target_index: 0
     max_target_age: 1.5 # s
     max_joint_age: 1.0 # s
+    hardware_status_timeout: 0.1 # s，执行须有新鲜硬件状态且 mode=2
 
     base_frame: base_link
     planning_group: arm_control
