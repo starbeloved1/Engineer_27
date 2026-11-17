@@ -15,4 +15,8 @@
   <disable_collisions link1="link_3" link2="link_4" reason="Adjacent"/>
   <disable_collisions link1="link_4" link2="link_5" reason="Adjacent"/>
   <disable_collisions link1="link_5" link2="link_6" reason="Adjacent"/>
+  <group name="gripper"><joint name="gripper_state_joint"/></group>
+  <group_state name="open" group="gripper"><joint name="gripper_state_joint" value="0.01"/></group_state>
+  <group_state name="closed" group="gripper"><joint name="gripper_state_joint" value="0"/></group_state>
+  <end_effector name="gripper" parent_link="link_6" group="gripper" parent_group="arm_control"/>
 </robot>

@@ -16,5 +16,6 @@
     <xacro:mock_joint name="link_4_joint"/>
     <xacro:mock_joint name="link_5_joint"/>
     <xacro:mock_joint name="link_6_joint"/>
+    <xacro:mock_joint name="gripper_state_joint"/>
   </ros2_control>
 </robot>

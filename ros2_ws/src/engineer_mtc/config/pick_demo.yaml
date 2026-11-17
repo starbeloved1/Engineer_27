@@ -1,0 +1,12 @@
+# 仅用于 GenericSystem 模拟演示；不是相机、夹爪 TCP 或车载存矿标定。
+# demo_pick 通过 FK 生成目标并设置本次模拟存矿位。
+engineer_mtc:
+  ros__parameters:
+    velocity_scaling: 0.5
+    acceleration_scaling: 0.5
+    tip_to_tcp_xyz: [0.12, 0.0, 0.0]
+    tip_to_tcp_rpy: [0.0, 0.0, 0.0]
+    object_to_tcp_xyz: [0.000734246038, -0.001457943306, 0.004333127084]
+    object_to_tcp_rpy: [0.0, 0.0, 0.0]
+    storage_xyz: [0.158229722978, 0.307576469702, 0.469753348775]
+    storage_rpy: [-0.002554603711, -0.799999883044, 1.100005357145]

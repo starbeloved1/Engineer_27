@@ -1,6 +1,6 @@
 engineer_mtc:
   ros__parameters:
-    pose_topic: /vision/icp/object_poses # 默认在camera_link下                    
+    pose_topic: /vision/icp/object_poses # 默认在camera_link下               
     target_index: 0
     max_target_age: 1.5 # s
     max_joint_age: 1.0 # s
@@ -25,3 +25,19 @@ engineer_mtc:
     pregrasp_distance: 0.07 # m
     include_approach: true # 写 true 即可
     cartesian_step: 0.005 # m，直线插值步长
+
+    # auto 连续执行；step 每阶段完成后等待 next_stage；启动执行时读取。
+    execution_mode: auto
+    gripper_group: gripper
+    object_id: energy
+    touch_links: [link_6]
+    # T_PLY_energy：离线模型之间的变换，不是相机或 TCP 标定。
+    object_to_energy_xyz: [0.000734246038, -0.001457943306, 0.004333127084]
+    object_to_energy_rpy: [3.139041892859, -0.000000116949, -0.000003732359]
+    extraction_axis: [0.0, 0.0, 1.0] # 原 PLY 目标坐标系，沿用26，不是URDF的+Z
+    extraction_distance: 0.10 # m
+    storage_distance: 0.10 # 预存矿沿存矿energy坐标系+Z偏移
+    retreat_distance: 0.07 # 松爪后沿TCP接近方向的反向退出
+    # 仅模拟占位；demo_pick 提供经过验证的模拟配置，不是实车存矿标定。
+    storage_xyz: [0.25, 0.20, 0.35] # 能量单元energy_link在base_frame中的目标
+    storage_rpy: [0.0, 0.0, 0.0]

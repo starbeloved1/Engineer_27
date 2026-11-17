@@ -1,0 +1,19 @@
+uint8 IDLE=0
+uint8 PLANNING=1
+uint8 READY=2
+uint8 EXECUTING=3
+uint8 WAITING_NEXT=4
+uint8 SUCCEEDED=5
+uint8 FAILED=6
+uint8 CANCELED=7
+
+std_msgs/Header header
+uint64 task_id
+uint8 stage
+uint8 phase
+string execution_mode
+bool target_valid
+bool gripper_known
+bool gripper_closed
+bool object_attached
+string message

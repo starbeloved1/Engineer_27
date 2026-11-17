@@ -14,8 +14,15 @@ struct TaskSettings
   unsigned int max_ik_solutions;
   Eigen::Vector3d approach_axis;
   Eigen::Isometry3d tip_to_tcp;
+  std::string gripper_group = "gripper", object_id = "energy";
+  std::vector<std::string> touch_links = {"link_6"};
+  Eigen::Isometry3d object_to_energy = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d storage_energy = Eigen::Isometry3d::Identity();
+  Eigen::Vector3d extraction_axis = Eigen::Vector3d::UnitZ();
+  double extraction_distance = 0.10, storage_distance = 0.10, retreat_distance = 0.07;
 };
 
-std::unique_ptr<moveit::task_constructor::Task> createPregraspTask(
-    const rclcpp::Node::SharedPtr& node, const TaskSettings& settings, const GraspTargets& targets);
-}  // namespace engineer_mtc
+std::unique_ptr<moveit::task_constructor::Task>
+createPregraspTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
+                   const GraspTargets &targets);
+} // namespace engineer_mtc

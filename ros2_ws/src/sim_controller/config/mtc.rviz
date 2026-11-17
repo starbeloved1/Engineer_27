@@ -61,6 +61,12 @@ Visualization Manager:
       Shape: Axes
       Axes Length: 0.1
       Axes Radius: 0.004
+    - Class: rviz_default_plugins/Marker
+      Name: Energy Visual
+      Enabled: true
+      Marker Topic:
+        Value: /energy_display/marker
+        Durability Policy: Transient Local
   Global Options:
     Fixed Frame: world
     Background Color: 48; 48; 48

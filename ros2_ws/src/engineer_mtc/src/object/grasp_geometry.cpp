@@ -47,7 +47,7 @@ Eigen::Isometry3d xyzRpyTransform(const std::vector<double>& xyz, const std::vec
 }
 
 
-// 打包GraspTargets
+// 打包 GraspTargets
 GraspTargets computeGraspTargets(const Eigen::Isometry3d& object_base,
                                 const Eigen::Isometry3d& object_to_tcp,
                                 const Eigen::Isometry3d& tip_to_tcp,

@@ -3,6 +3,8 @@ controller_manager:
     update_rate: 100 # 样条插值
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
+    gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 arm_controller:
@@ -16,3 +18,11 @@ arm_controller:
     allow_nonzero_velocity_at_trajectory_end: false
     constraints:
       goal_time: 1.0
+
+gripper_controller:
+  ros__parameters:
+    joints: [gripper_state_joint]
+    command_interfaces: [position]
+    state_interfaces: [position, velocity]
+    state_publish_rate: 50.0
+    constraints: {goal_time: 1.0}

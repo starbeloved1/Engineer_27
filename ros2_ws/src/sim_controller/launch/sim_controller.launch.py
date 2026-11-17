@@ -35,6 +35,10 @@ def launch_setup(context):
         Node(package='controller_manager', executable='spawner',
              arguments=['arm_controller', '--controller-manager-timeout', '30']),
     ]
+    actions.append(Node(package='controller_manager', executable='spawner',
+                        arguments=['gripper_controller', '--controller-manager-timeout', '30']))
+    if config.get('show_energy', True):
+        actions.append(Node(package='sim_controller', executable='energy_display_node', output='screen'))
     if use_rviz:
         actions.append(rviz_node())
     return actions

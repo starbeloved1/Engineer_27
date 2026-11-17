@@ -2,4 +2,11 @@
 <!-- 纯机器人模型；模拟硬件接口由 sim_controller 添加。 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="urdf">
   <xacro:include filename="$(find moveit_config)/urdf/arm.urdf"/>
+  <!-- Virtual gripper state only; no fabricated moving-finger geometry. -->
+  <link name="gripper_state_link"/>
+  <joint name="gripper_state_joint" type="prismatic">
+    <parent link="link_6"/><child link="gripper_state_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="0.01" effort="1" velocity="0.02"/>
+  </joint>
 </robot>

@@ -11,4 +11,5 @@ def generate_launch_description():
         parameters=[config.to_dict(), {'publish_robot_description': True,
             'publish_robot_description_semantic': True, 'publish_planning_scene': True,
             'publish_geometry_updates': True, 'publish_state_updates': True,
-            'publish_transforms_updates': True, 'allow_trajectory_execution': True}], output='screen')])
+            'publish_transforms_updates': True, 'allow_trajectory_execution': True,
+            'capabilities': 'move_group/ExecuteTaskSolutionCapability'}], output='screen')])
