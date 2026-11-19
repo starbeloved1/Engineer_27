@@ -7,4 +7,7 @@ unset AMENT_PREFIX_PATH CMAKE_PREFIX_PATH COLCON_PREFIX_PATH PYTHONPATH LD_LIBRA
 source /opt/ros/humble/setup.bash
 export CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-2}"
 cd "$engineer_root/ros2_ws"
-/usr/bin/colcon build --symlink-install --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3 "$@"
+# Humble 消息生成器还使用旧版 FindPythonInterp，需要同时指定 PYTHON_EXECUTABLE。
+/usr/bin/colcon build --symlink-install --cmake-args \
+  -DPython3_EXECUTABLE=/usr/bin/python3 \
+  -DPYTHON_EXECUTABLE=/usr/bin/python3 "$@"

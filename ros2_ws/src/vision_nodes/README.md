@@ -4,6 +4,11 @@
 
 基于 RealSense D435 的能量单元识别与位姿解算
 
+检测和录像的 Python 节点默认使用当前 `VIRTUAL_ENV`，未激活环境时使用 `~/venv`；
+`yolo_python:=FILE` 可单独覆盖检测节点的解释器。构建和 ROS launch 使用系统 Python。
+在 Jetson 上先准备与 JetPack 匹配的 NVIDIA PyTorch / torchvision，再运行
+`~/venv/bin/python3 -m pip install -r requirements.txt`（工程根目录）安装 Python 依赖。
+
 原理：RealSense 获取彩色图像和点云 → YOLO 或手动框选能量单元 → 保留框内点云 → SOR 去离群点、体素降采样 → 与模型进行 ICP 配准 → 位姿后处理 → 输出矿的位置和朝向。
 
 `vision_nodes/` 是功能分组目录，包含以下独立 ROS 包：
@@ -27,6 +32,7 @@
 
 - `/vision/yolo/detections`（`vision_msgs/msg/Detection2DArray`）：yolo 检测框
 - `/vision/visualization/image`（`sensor_msgs/msg/Image`）：同帧彩色图像叠加检测框
+- `/vision/visualization/image/compressed`（`sensor_msgs/msg/CompressedImage`）：按需发布的 JPEG 叠框图，推荐远程 Foxglove Image 面板使用；质量由 `visualization_jpeg_quality` 配置。
 - `/vision/model_cloud`（`sensor_msgs/msg/PointCloud2`）：模型源点云，供 ICP 配准
 
 ### ICP 输出
@@ -47,3 +53,10 @@
 观测云先剔除无效点和超出 `max_range` 的点，再按检测框取点，依次执行 SOR 和体素过滤。模型云会单独执行缩放、随机限点和体素过滤。
 
 ICP 使用point_to_point配准。首次用质心平移初始化，后续复用同序号检测上次成功的变换作为初值;通过配准验收后，按模型 Z 轴构造朝向，并根据配置进行六矿布局先验、Z 轴朝外和轴角约束修正。`raw_object_poses` 与 `object_poses` 可用于对比修正前后结果
+
+## Foxglove 远程显示
+
+Image 面板选择 `/vision/visualization/image/compressed`，取消原始叠框图订阅。
+不需要的原始点云和深度图显示也应关闭：仅隐藏面板不一定取消订阅，需取消对应话题选择。
+1280×720 RGB8 在 30 FPS 时原始数据约 83 MB/s；JPEG 可降低网络传输量，具体大小取决于画面。
+压缩只在有订阅者时执行，检测、ICP 与录像仍使用原始数据。

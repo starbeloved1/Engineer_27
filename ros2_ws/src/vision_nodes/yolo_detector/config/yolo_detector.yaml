@@ -1,10 +1,11 @@
 yolo_detector:
   ros__parameters:
-    use_manual_roi: true # 是否启用手动 roi
-    model_path: model/best.pt
+    use_manual_roi: false # 是否启用手动 roi
+    model_path: model/best1.pt
     color_topic: /camera/camera/color/image_raw
     detection_topic: /vision/yolo/detections
     visualization_topic: /vision/visualization/image # 可视化
+    visualization_jpeg_quality: 80 # 远程 compressed 图像 JPEG 质量，1~100
     visualization_rate_hz: 0.0 # 跟随检测结果
     conf_thres: 0.5
     iou_thres: 0.45

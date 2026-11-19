@@ -1,5 +1,4 @@
 import os
-import shutil
 import sys
 from pathlib import Path
 from ament_index_python.packages import get_package_share_directory
@@ -13,9 +12,8 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     share = Path(get_package_share_directory('yolo_detector'))
-    conda_executable = os.environ.get('CONDA_EXE') or shutil.which('conda')
-    python = (str(Path(conda_executable).resolve().parents[1] / 'envs/engineer/bin/python')
-              if conda_executable else sys.executable)
+    venv_python = Path(os.environ.get('VIRTUAL_ENV', str(Path.home() / 'venv'))) / 'bin/python3'
+    python = str(venv_python) if venv_python.is_file() else sys.executable
     node = Node(package='yolo_detector', executable='yolo_detector_node', name='yolo_detector',
                 output='screen', cwd=str(share), parameters=[LaunchConfiguration('vision_config')],
                 prefix=[LaunchConfiguration('yolo_python')], additional_env={'PYTHONNOUSERSITE': '1'})

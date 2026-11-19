@@ -10,7 +10,7 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage, Image
 from std_srvs.srv import Trigger
 from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithPose
 
@@ -29,10 +29,13 @@ class YoloDetector(Node):
         self.visualization_topic = self.declare_parameter(
             "visualization_topic", "/vision/visualization/image").value
         visualization_rate = float(self.declare_parameter("visualization_rate_hz", 0.0).value)
+        self.visualization_jpeg_quality = self.declare_parameter("visualization_jpeg_quality", 80).value
+        if not 1 <= self.visualization_jpeg_quality <= 100:
+            raise ValueError("visualization_jpeg_quality 必须在 [1, 100] 范围内")
         self.use_manual_roi = self.declare_parameter("use_manual_roi", False).value
         self.manual_roi = ManualRoiSelector()
         model_path = self.declare_parameter(
-            "model_path", "model/best.pt").value
+            "model_path", "model/best1.pt").value
         self.conf_thres = float(self.declare_parameter("conf_thres", 0.5).value)
         self.iou_thres = float(self.declare_parameter("iou_thres", 0.45).value)
         self.device_name = self.declare_parameter("device", "cpu").value.strip().lower()
@@ -72,6 +75,8 @@ class YoloDetector(Node):
         self.detection_pub = self.create_publisher(
             Detection2DArray, self.detection_topic, result_qos)
         self.visualization_pub = self.create_publisher(Image, self.visualization_topic, 1)
+        self.compressed_visualization_pub = self.create_publisher(
+            CompressedImage, self.visualization_topic + "/compressed", 1)
         self.image_sub = self.create_subscription(
             Image, self.color_topic, self.image_callback, input_qos)
         self.roi_window_timer = self.create_timer(1.0 / 30.0, self.poll_manual_roi)
@@ -135,16 +140,30 @@ class YoloDetector(Node):
 
     def publish_visualization(self, image, detections):
         # 直接使用本帧推理/选框结果，不再跨节点缓存图像等待同步。
-        if self.visualization_pub.get_subscription_count() == 0:
+        raw_requested = self.visualization_pub.get_subscription_count() > 0
+        compressed_requested = self.compressed_visualization_pub.get_subscription_count() > 0
+        if not raw_requested and not compressed_requested:
             return
         now = time.monotonic()
         if (self.last_visualization_at is not None
                 and now - self.last_visualization_at < self.visualization_period):
             return
         try:
-            output = self.bridge.cv2_to_imgmsg(draw_detections(image, detections), encoding='bgr8')
-            output.header = detections.header
-            self.visualization_pub.publish(output)
+            annotated = draw_detections(image, detections)
+            if raw_requested:
+                output = self.bridge.cv2_to_imgmsg(annotated, encoding='bgr8')
+                output.header = detections.header
+                self.visualization_pub.publish(output)
+            if compressed_requested:
+                success, encoded = cv2.imencode(
+                    '.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, self.visualization_jpeg_quality])
+                if not success:
+                    raise CvBridgeError('JPEG 编码失败')
+                compressed = CompressedImage()
+                compressed.header = detections.header
+                compressed.format = 'bgr8; jpeg compressed bgr8'
+                compressed.data = encoded.tobytes()
+                self.compressed_visualization_pub.publish(compressed)
             self.last_visualization_at = now
         except (CvBridgeError, cv2.error) as error:
             self.get_logger().error(f"检测叠框图像生成失败: {error}", throttle_duration_sec=5.0)

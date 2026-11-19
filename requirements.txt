@@ -1,0 +1,8 @@
+# Python 运行与 ROS 工具依赖；ROS 自身由 /opt/ros/humble 提供。
+-r ros2_ws/src/vision_nodes/yolo_detector/requirements.txt
+PyYAML
+catkin_pkg
+empy==3.3.4
+lark-parser
+packaging
+typeguard
