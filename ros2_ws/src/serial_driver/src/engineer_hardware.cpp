@@ -109,7 +109,8 @@ Callback EngineerHardware::on_configure(const rclcpp_lifecycle::State &)
         mock_feedback_.grip = encodeCommand(initial_)[14];
         mock_feedback_.grip_state = 1;
         mock_feedback_.mode = mock_mode_.load();
-        acceptFeedbackLocked(mock_feedback_);
+        const auto frame = encodeFeedback(mock_feedback_);
+        receiveBytesLocked(frame.data(), frame.size());
         last_mock_tx_ = Clock::time_point();
       }
     }
@@ -234,8 +235,13 @@ Result EngineerHardware::read(const rclcpp::Time &, const rclcpp::Duration &)
       (mock_feedback_.mode != mock_mode_.load() ||
        std::chrono::duration<double>(Clock::now() - last_rx_).count() >= 1 / feedback_rate_))
   {
-    mock_feedback_.mode = mock_mode_.load();
-    acceptFeedbackLocked(mock_feedback_);
+    try
+    {
+      mock_feedback_.mode = mock_mode_.load();
+      const auto frame = encodeFeedback(mock_feedback_);
+      receiveBytesLocked(frame.data(), frame.size());
+    }
+    catch (const std::exception &e) { failLocked(e.what()); return Result::ERROR; }
   }
   if (!freshLocked())
   {
@@ -268,12 +274,13 @@ Result EngineerHardware::write(const rclcpp::Time &, const rclcpp::Duration &)
         std::chrono::duration<double>(Clock::now() - last_mock_tx_).count() >= 1 / tx_rate_)
     {
       // 虚拟 MCU 在 write() 采纳目标，下一次 read() 返回量化后的实际状态。
-      std::array<uint8_t, kRxSize> echo{};
-      echo[0] = 0x55; echo[1] = 0xaa;
-      std::copy(frame.begin() + 2, frame.begin() + 14, echo.begin() + 2);
-      echo[26] = frame[14]; echo[27] = 1; echo[28] = mock_mode_.load();
-      echo[29] = checksum(echo.data() + 2, 27); echo[30] = 0x0d;
-      decodeFeedback(echo.data(), mock_feedback_);
+      JointValues actual{};
+      if (!decodeCommand(frame.data(), actual))
+        throw std::runtime_error("模拟 MCU 拒绝无效控制帧");
+      mock_feedback_.position = actual;
+      mock_feedback_.grip = frame[14];
+      mock_feedback_.grip_state = 1;
+      mock_feedback_.mode = mock_mode_.load();
       last_mock_tx_ = Clock::now();
       ++tx_frames_;
     }
@@ -287,10 +294,9 @@ void EngineerHardware::failLocked(const std::string &why)
   faulted_ = true; require_stop_ = true; error_ = why;
   wake_.notify_all();
 }
-void EngineerHardware::acceptFeedback(const Feedback &f)
+void EngineerHardware::receiveBytesLocked(const uint8_t *data, size_t size)
 {
-  std::lock_guard<std::mutex> lock(mutex_);
-  acceptFeedbackLocked(f);
+  for (const auto &feedback : parser_.append(data, size)) acceptFeedbackLocked(feedback);
 }
 void EngineerHardware::acceptFeedbackLocked(const Feedback &f)
 {
@@ -345,7 +351,8 @@ void EngineerHardware::ioLoop()
       if (!mock_)
       {
         const auto data = port_.readAvailable();
-        for (const auto &feedback : parser_.append(data.data(), data.size())) acceptFeedback(feedback);
+        std::lock_guard<std::mutex> lock(mutex_);
+        receiveBytesLocked(data.data(), data.size());
       }
       TxFrame frame{};
       bool send = false;

@@ -38,7 +38,7 @@ private:
   unsigned interfaceMask(const std::vector<std::string> &) const;
   void stopWorker();
   void ioLoop();
-  void acceptFeedback(const Feedback &);
+  void receiveBytesLocked(const uint8_t *, size_t);
   void acceptFeedbackLocked(const Feedback &);
   void publishStatus();
   void failLocked(const std::string &);

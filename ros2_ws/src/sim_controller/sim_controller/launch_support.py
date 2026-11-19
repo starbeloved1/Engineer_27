@@ -15,7 +15,7 @@ def rviz_environment(native=False):
     if native:
         plugins.append('libmoveit_motion_planning_rviz_plugin.so')
     values = [os.environ.get('LD_PRELOAD', ''), *(str(directory / name) for name in plugins)]
-    return {'LD_PRELOAD': ':'.join(value for value in values if value)}
+    return {'LD_PRELOAD': ':'.join(value for value in values if value), 'ROS_DOMAIN_ID': '6'}
 
 
 def rviz_node(native=False):

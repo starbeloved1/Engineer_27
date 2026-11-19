@@ -62,6 +62,8 @@ for argument in "$@"; do
   esac
 done
 
+source "$engineer_root/tools/ros_env.sh"
+
 # 同一工作区、同一 ROS 域中，每种模式只启动一套，避免同名控制器／状态话题冲突。
 cd "$engineer_root"
 mkdir -p "$engineer_root/.cache"

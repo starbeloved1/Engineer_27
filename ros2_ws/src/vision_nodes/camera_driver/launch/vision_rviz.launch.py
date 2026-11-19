@@ -13,5 +13,6 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('rviz_config', default_value=str(share / 'config/vision.rviz')),
         Node(package='rviz2', executable='rviz2', name='vision_rviz', output='screen',
-             arguments=['-d', LaunchConfiguration('rviz_config')]),
+             arguments=['-d', LaunchConfiguration('rviz_config')],
+             additional_env={'ROS_DOMAIN_ID': '6'}),
     ])

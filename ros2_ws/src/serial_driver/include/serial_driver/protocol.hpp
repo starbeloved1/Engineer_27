@@ -15,6 +15,7 @@ constexpr double kAngleUnit = kPi / 18000.0;
 constexpr double kGripperOpen = 0.01;
 using JointValues = std::array<double, kJoints>;
 using TxFrame = std::array<uint8_t, kTxSize>;
+using RxFrame = std::array<uint8_t, kRxSize>;
 struct Feedback
 {
   JointValues position{}, velocity{};
@@ -22,6 +23,8 @@ struct Feedback
 };
 uint8_t checksum(const uint8_t *data, size_t size);
 TxFrame encodeCommand(const JointValues &position);
+bool decodeCommand(const uint8_t *frame, JointValues &position);
+RxFrame encodeFeedback(const Feedback &feedback);
 // 严格校验帧头、帧尾、累加和及位置范围；未知 mode 仍解码，交给控制权逻辑处理。
 bool decodeFeedback(const uint8_t *frame, Feedback &feedback);
 class FeedbackParser

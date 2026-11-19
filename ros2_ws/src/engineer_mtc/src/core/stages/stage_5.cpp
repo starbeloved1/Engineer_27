@@ -42,8 +42,6 @@ std::unique_ptr<mtc::SerialContainer> createStage5(const PickContext &c)
                              c.settings.retreat_distance));
   }
 
-  // 对齐 26：存矿后不恢复接触碰撞限制，下一阶段清理场景后回位。
-
   return stage;
 }
 } // namespace engineer_mtc

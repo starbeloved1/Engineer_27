@@ -7,8 +7,7 @@ std::unique_ptr<mtc::SerialContainer> createStage1(const PickContext &c)
 {
   auto stage = std::make_unique<mtc::SerialContainer>("stage_1: pregrasp");
 
-  // 对齐 26 pick：机器人各 link 默认允许碰撞，贯穿后续完整 Task。
-  // setDefaultEntry 不覆盖已有的显式碰撞对。
+  // 机器人各 link 默认允许碰撞
   {
   auto relax = std::make_unique<mtc::stages::ModifyPlanningScene>("relax collision monitoring");
   relax->setCallback([group = c.settings.group, object = c.settings.object_id](

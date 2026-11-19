@@ -6,7 +6,7 @@ namespace engineer_mtc
 std::unique_ptr<mtc::SerialContainer> createStage6(const PickContext &c)
 {
   auto stage = std::make_unique<mtc::SerialContainer>("stage_6: home");
-  // 对齐 26 pick 的回位阶段，仍保留机械臂与底座的碰撞检查。
+  // 仍保留机械臂与底座的碰撞检查
   {
   auto clear = std::make_unique<mtc::stages::ModifyPlanningScene>("wipe scene");
   clear->setCallback([group = c.settings.group](
