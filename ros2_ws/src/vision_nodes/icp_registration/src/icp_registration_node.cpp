@@ -151,7 +151,8 @@ IcpRegistrationNode::IcpRegistrationNode(const rclcpp::NodeOptions& options)
   if (publish_tf_)
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
   // 26 的输入策略：最新检测框 + 当前点云。
-  auto input_qos = rclcpp::QoS(5);
+  // 处理跟不上采集时丢弃旧帧，避免旧点云累积增加端到端延迟。
+  auto input_qos = rclcpp::QoS(1);
   if (reliability == "best_effort")
     input_qos.best_effort();
   cloud_sub_ = create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -165,7 +166,7 @@ IcpRegistrationNode::IcpRegistrationNode(const rclcpp::NodeOptions& options)
         camera_frame_ = message->header.frame_id;
       });
   detection_sub_ = create_subscription<vision_msgs::msg::Detection2DArray>(
-      detection_topic, 10,
+      detection_topic, rclcpp::QoS(1),
       [this](vision_msgs::msg::Detection2DArray::ConstSharedPtr message)
       { detections_ = message; });
   source_sub_ = create_subscription<sensor_msgs::msg::PointCloud2>(
