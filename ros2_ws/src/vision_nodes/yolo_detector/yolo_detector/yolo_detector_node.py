@@ -14,6 +14,7 @@ from sensor_msgs.msg import CompressedImage, Image
 from std_srvs.srv import Trigger
 from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithPose
 
+from .cloud_overlay import CloudOverlay
 from .manual_roi import ManualRoiSelector
 from .detection_visualization import draw_detections
 
@@ -77,6 +78,7 @@ class YoloDetector(Node):
         self.visualization_pub = self.create_publisher(Image, self.visualization_topic, 1)
         self.compressed_visualization_pub = self.create_publisher(
             CompressedImage, self.visualization_topic + "/compressed", 1)
+        self.cloud_overlay = CloudOverlay(self)
         self.image_sub = self.create_subscription(
             Image, self.color_topic, self.image_callback, input_qos)
         self.roi_window_timer = self.create_timer(1.0 / 30.0, self.poll_manual_roi)
@@ -149,7 +151,8 @@ class YoloDetector(Node):
                 and now - self.last_visualization_at < self.visualization_period):
             return
         try:
-            annotated = draw_detections(image, detections)
+            annotated = draw_detections(
+                self.cloud_overlay.draw(image, detections.header), detections)
             if raw_requested:
                 output = self.bridge.cv2_to_imgmsg(annotated, encoding='bgr8')
                 output.header = detections.header

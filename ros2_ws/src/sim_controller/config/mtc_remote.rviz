@@ -1,0 +1,111 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+- Class: moveit_task_constructor/Motion Planning Tasks
+  Name: Motion Planning Tasks
+  Global Settings:
+    Task View Settings:
+      Show Computation Times: true
+      Task Expansion: All Expanded
+Visualization Manager:
+  Displays:
+  - Class: rviz_default_plugins/Grid
+    Name: Grid
+    Enabled: true
+    Cell Size: 0.1
+    Plane Cell Count: 20
+  - Class: rviz_default_plugins/RobotModel
+    Name: Current Robot
+    Enabled: true
+    Description Source: Topic
+    Description Topic:
+      Value: /robot_description
+      Durability Policy: Transient Local
+    Visual Enabled: true
+    Collision Enabled: false
+  - Class: moveit_task_constructor/Motion Planning Tasks
+    Name: MTC Stages and Solution
+    Enabled: true
+    Robot Description: robot_description
+    Task Solution Topic: /engineer_mtc/solution
+    Loop Animation: false
+    Interrupt Display: false
+    State Display Time: 0.05 s
+    Show Trail: false
+    Robot:
+      Robot Alpha: 0.65
+      Show Robot Visual: true
+      Show Robot Collision: false
+    Scene:
+      Value: true
+      Scene Alpha: 0.9
+    Markers:
+      Value: true
+      All at once?: false
+  - Class: moveit_rviz_plugin/Trajectory
+    Name: Trajectory Fallback (enable if needed)
+    Enabled: false
+    Robot Description: robot_description
+    Color Enabled: true
+    Robot Color: 255; 160; 0
+    Trajectory Topic: /engineer_mtc/display_planned_path
+    Loop Animation: false
+    State Display Time: 0.05 s
+  - Class: moveit_rviz_plugin/PlanningScene
+    Name: Planning Scene
+    Enabled: true
+    Robot Description: robot_description
+    Planning Scene Topic: /monitored_planning_scene
+    Scene Robot:
+      Robot Visual Enabled: false
+      Robot Collision Enabled: false
+  - Class: rviz_default_plugins/Pose
+    Name: Object Model Origin
+    Enabled: true
+    Topic:
+      Value: /engineer_mtc/object_pose_base
+      Durability Policy: Transient Local
+    Shape: Axes
+    Axes Length: 0.05
+    Axes Radius: 0.003
+  - Class: rviz_default_plugins/Pose
+    Name: Grasp TCP
+    Enabled: true
+    Topic:
+      Value: /engineer_mtc/grasp_tcp
+      Durability Policy: Transient Local
+    Shape: Axes
+    Axes Length: 0.08
+    Axes Radius: 0.003
+  - Class: rviz_default_plugins/Pose
+    Name: Pregrasp link_6
+    Enabled: true
+    Topic:
+      Value: /engineer_mtc/pregrasp_pose
+      Durability Policy: Transient Local
+    Shape: Axes
+    Axes Length: 0.1
+    Axes Radius: 0.004
+  - Class: rviz_default_plugins/Marker
+    Name: Energy Visual
+    Enabled: true
+    Marker Topic:
+      Value: /energy_display/marker
+      Durability Policy: Transient Local
+  Global Options:
+    Fixed Frame: world
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Tools:
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/Select
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 2.0
+      Pitch: 0.5
+      Yaw: 0.8
+      Target Frame: base_link
+Window Geometry:
+  Width: 1280
+  Height: 800

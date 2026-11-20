@@ -60,3 +60,16 @@ Image 面板选择 `/vision/visualization/image/compressed`，取消原始叠框
 不需要的原始点云和深度图显示也应关闭：仅隐藏面板不一定取消订阅，需取消对应话题选择。
 1280×720 RGB8 在 30 FPS 时原始数据约 83 MB/s；JPEG 可降低网络传输量，具体大小取决于画面。
 压缩只在有订阅者时执行，检测、ICP 与录像仍使用原始数据。
+
+### 图像上的点云投影
+
+`/vision/visualization/image/compressed` 继续作为远程图像入口，同时包含绿色检测框和橙红色点云投影；原始图话题也包含相同叠加。
+默认投影 `/vision/icp/aligned_cloud`（完整后处理后的配准模型），仅用于显示，不修改检测、配准或原图录像。
+在 `yolo_detector/config/yolo_detector.yaml` 中修改 `overlay_cloud_topic` 可切换为
+`/vision/icp/target_cloud`（过滤后的框内观测点）或 `/camera/camera/depth/color/points`（相机点云）。
+远端只需订阅压缩图，无需再订阅 PointCloud2。
+
+投影使用彩色 CameraInfo 的内参及畸变参数，并在点云时间戳查询 TF 转入彩色光学坐标系。
+从最多 8 帧点云中选取与图像采集时间最接近的一帧，默认时间差上限 `overlay_cloud_max_age: 0.2` 秒；这是异步显示叠加，不是严格同帧同步。
+缺少有效点云、TF 或相机内参时只显示检测框，过期云不继续绘制。ICP 尚未成功时没有模型投影点属于正常情况。
+`overlay_cloud_max_points: 3000` 和 `overlay_cloud_radius: 1` 控制显示密度；`overlay_cloud_enabled: false` 关闭叠加。
