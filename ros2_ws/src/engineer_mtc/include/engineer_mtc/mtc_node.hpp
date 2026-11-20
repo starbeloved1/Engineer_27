@@ -1,6 +1,7 @@
 #pragma once
 #include "engineer_mtc/energy_scene.hpp"
 #include "engineer_mtc/pregrasp_task.hpp"
+#include "engineer_mtc/vision_target_buffer.hpp"
 #include <array>
 #include <atomic>
 #include <engineer_mtc/msg/pick_status.hpp>
@@ -50,8 +51,9 @@ private:
   void updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr message);
   TaskSettings settings_;
   Eigen::Isometry3d object_to_tcp_;
-  double max_target_age_, max_joint_age_;
-  int target_index_;
+  double max_target_age_, max_joint_age_, target_average_max_age_;
+  int target_index_, target_average_samples_;
+  VisionTargetBuffer vision_history_;
   std::string execution_mode_;
   std::atomic<bool> busy_{false}, cancel_requested_{false}, owned_{false};
   std::mutex input_mutex_, state_mutex_, goal_mutex_, scene_mutex_, command_mutex_;

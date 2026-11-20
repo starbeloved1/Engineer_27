@@ -173,22 +173,21 @@
     <axis xyz="0 0 1" />
     <limit effort="1000" velocity="1" />
   </joint>
-  <!-- Camera mount copied from engineer_2026/engineer_urdf.
-       arm2_Link is mapped by chain order to link_3. The 26/27 link frames
-       differ: these unchanged values are a reference mount, not calibrated
-       extrinsics for the 27 robot. No camera collision geometry is added.
-       RealSense publishes its own camera_link -> sensor/optical transforms. -->
+  <!-- 由 26 的 arm2_link 网格与 27 的 link_3 网格对齐后转换相机外参：
+       T_link3_arm2 约为 xyz=(0, 0.01725, 0), rpy=(-pi/2, 0, 0)。
+       两代机构及实际安装仍可能不同，此外参须对 27 实物标定验证。
+       RealSense 发布 camera_link -> sensor/optical 内部变换。 -->
   <link name="camera_Link" />
   <joint name="camera_Joint" type="fixed">
     <parent link="link_3" />
     <child link="camera_Link" />
-    <origin xyz="0.00156636932787352 -0.0700882759972481 -0.0118950013181592"
-            rpy="-0.0872664625997036 1.5707963267949 0" />
+    <origin xyz="0.169866 0.07715 0.0205"
+            rpy="0 0 0" />
   </joint>
   <link name="camera_link" />
   <joint name="intel_fake_joint" type="fixed">
     <parent link="camera_Link" />
     <child link="camera_link" />
-    <origin xyz="0 0 0" rpy="1.57079632679 -1.57079632679 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
   </joint>
 </robot>

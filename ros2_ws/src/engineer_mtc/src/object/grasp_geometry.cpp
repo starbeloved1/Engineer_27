@@ -1,5 +1,6 @@
 #include "engineer_mtc/grasp_geometry.hpp"
 #include <cmath>
+#include <Eigen/Eigenvalues>
 #include <stdexcept>
 
 namespace engineer_mtc
@@ -46,6 +47,30 @@ Eigen::Isometry3d xyzRpyTransform(const std::vector<double>& xyz, const std::vec
   return result;
 }
 
+
+geometry_msgs::msg::Pose averagePoses(const std::vector<geometry_msgs::msg::Pose> &poses)
+{
+  if (poses.empty()) throw std::invalid_argument("不能平均空位姿窗口");
+  Eigen::Vector3d position = Eigen::Vector3d::Zero();
+  Eigen::Matrix4d scatter = Eigen::Matrix4d::Zero();
+  for (const auto &pose : poses)
+  {
+    const auto transform = poseTransform(pose);
+    position += transform.translation();
+    const Eigen::Quaterniond q(transform.linear());
+    scatter += q.coeffs() * q.coeffs().transpose();
+  }
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> solver(scatter);
+  if (solver.info() != Eigen::Success ||
+      solver.eigenvalues()[3] - solver.eigenvalues()[2] < 1e-8 * poses.size())
+    throw std::runtime_error("视觉朝向均值不唯一，请重新采样");
+  Eigen::Quaterniond q;
+  q.coeffs() = solver.eigenvectors().col(3);
+  Eigen::Isometry3d mean = Eigen::Isometry3d::Identity();
+  mean.translation() = position / static_cast<double>(poses.size());
+  mean.linear() = q.normalized().toRotationMatrix();
+  return transformPose(mean);
+}
 
 // 打包 GraspTargets
 GraspTargets computeGraspTargets(const Eigen::Isometry3d& object_base,

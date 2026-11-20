@@ -9,6 +9,7 @@ def load_moveit_config():
     return (MoveItConfigsBuilder('urdf', package_name='moveit_config')
             .robot_description(file_path='config/arm.urdf.xacro')
             .robot_description_semantic(file_path='config/arm.srdf')
+            .sensors_3d(file_path='config/sensors_3d.yaml')
             .planning_pipelines(pipelines=['ompl']).to_moveit_configs())
 
 

@@ -1,0 +1,7 @@
+# 当前使用显式碰撞物体，不接入深度点云构建 Octomap。
+# Humble 要求 sensors 非空；以 ~ 开头的插件名表示明确跳过该更新器。
+sensors:
+  - disabled_octomap
+disabled_octomap:
+  sensor_plugin: '~disabled'
+octomap_resolution: 0.1

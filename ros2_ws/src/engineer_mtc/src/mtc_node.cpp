@@ -43,6 +43,10 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   max_joint_age_ = parameter(*this, "max_joint_age", 1.0);
   hardware_timeout_ = parameter(*this, "hardware_status_timeout", .1);
   target_index_ = parameter(*this, "target_index", 0);
+  target_average_samples_ = parameter(*this, "target_average_samples", 5);
+  target_average_max_age_ = parameter(*this, "target_average_max_age", 5.0);
+  if (target_average_samples_ < 1 || target_average_samples_ > 100)
+    throw std::invalid_argument("target_average_samples 须为 1 到 100 的整数");
   execution_mode_ = text("execution_mode", "auto");
   if (execution_mode_ != "auto" && execution_mode_ != "step")
     throw std::invalid_argument("execution_mode 须为 auto 或 step");
@@ -77,7 +81,7 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   settings_.object_id = text("object_id", "energy");
   for (double v :
        {settings_.planning_time, settings_.distance, settings_.cartesian_step, max_target_age_,
-        max_joint_age_, hardware_timeout_, settings_.velocity_scale, settings_.acceleration_scale,
+        max_joint_age_, target_average_max_age_, hardware_timeout_, settings_.velocity_scale, settings_.acceleration_scale,
         settings_.extraction_distance, settings_.storage_distance, settings_.retreat_distance})
     if (!std::isfinite(v) || v <= 0)
       throw std::invalid_argument("时间、距离及缩放须为有限正数");
@@ -105,6 +109,8 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
       {
         std::lock_guard<std::mutex> l(input_mutex_);
         vision_ = m;
+        vision_history_.push(*m, static_cast<size_t>(target_index_),
+                             static_cast<size_t>(target_average_samples_), max_target_age_);
       });
   manual_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
       "~/manual_object_pose", rclcpp::QoS(1).reliable(),
@@ -231,31 +237,41 @@ void MtcNode::updateJoints(sensor_msgs::msg::JointState::ConstSharedPtr m)
 
 geometry_msgs::msg::PoseStamped MtcNode::selectTarget(bool manual)
 {
-  std::lock_guard<std::mutex> l(input_mutex_);
-  auto fresh = [this](const auto &stamp, double maximum)
-  {
-    const double age = (now() - rclcpp::Time(stamp)).seconds();
-    return age >= -.1 && age <= maximum;
-  };
-  if (!joints_ || !fresh(joints_->header.stamp, max_joint_age_))
-    throw std::runtime_error("缺少新鲜 /joint_states");
   geometry_msgs::msg::PoseStamped target;
-  if (manual)
+  std::vector<geometry_msgs::msg::PoseStamped> samples;
   {
-    if (!manual_)
-      throw std::runtime_error("未收到手动目标");
-    target = *manual_;
-  }
-  else
-  {
+    std::lock_guard<std::mutex> l(input_mutex_);
+    auto fresh = [this](const auto &stamp, double maximum)
+    {
+      const double age = (now() - rclcpp::Time(stamp)).seconds();
+      return age >= -.1 && age <= maximum;
+    };
+    if (!joints_ || !fresh(joints_->header.stamp, max_joint_age_))
+      throw std::runtime_error("缺少新鲜 /joint_states");
+    if (manual)
+    {
+      if (!manual_) throw std::runtime_error("未收到手动目标");
+      target = *manual_;
+      if (target.header.frame_id.empty() || !fresh(target.header.stamp, max_target_age_))
+        throw std::runtime_error("目标坐标系为空或过期");
+      poseTransform(target.pose);
+      return target;
+    }
     if (!vision_ || target_index_ >= static_cast<int>(vision_->poses.size()))
       throw std::runtime_error("没有有效视觉目标");
-    target.header = vision_->header;
-    target.pose = vision_->poses[target_index_];
+    samples = vision_history_.recent(now().seconds(), target_average_max_age_,
+                                     static_cast<size_t>(target_average_samples_), max_target_age_);
   }
-  if (target.header.frame_id.empty() || !fresh(target.header.stamp, max_target_age_))
-    throw std::runtime_error("目标坐标系为空或过期");
-  poseTransform(target.pose);
+  // 每帧先按自己的采集时刻变换到 base，避免相机 TF 的变化被混入均值。
+  std::vector<geometry_msgs::msg::Pose> poses;
+  poses.reserve(samples.size());
+  for (const auto &sample : samples) poses.push_back(transformPose(targetInBase(sample)));
+  target.header = samples.front().header;  // 保留最旧样本时间戳，保守判断均值的新鲜度。
+  target.header.frame_id = settings_.base_frame;
+  target.pose = averagePoses(poses);
+  if ((now() - rclcpp::Time(samples.back().header.stamp)).seconds() > max_target_age_ ||
+      (now() - rclcpp::Time(target.header.stamp)).seconds() > target_average_max_age_)
+    throw std::runtime_error("视觉取样在坐标变换期间已过期，请重试");
   return target;
 }
 

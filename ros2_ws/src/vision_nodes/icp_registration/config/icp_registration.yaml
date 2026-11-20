@@ -20,11 +20,11 @@ icp_registration:
     ply_to_energy_rpy: [3.139041892859, -0.000000116949, -0.000003732359]
 
     max_icp_iter: 120 # PCL 最大迭代次数
-    voxel_size: 0.004 # 4mm 体素下采样，保留更多端部细节
-    max_corr_dist: 0.0004 # 最大对应距离 0.4 mm，单位 m
+    voxel_size: 0.006 # 6mm 体素下采样
+    max_corr_dist: 0.02 # 最大对应距离 2 cm
     min_points: 80 # ROI 提取和过滤后的观测点下限
     sor_mean_k: 20 
-    sor_std_mul: 1.5 # 放宽 SOR，减少有效边缘点被剔除
+    sor_std_mul: 0.8 # 恢复之前的 SOR 筛选阈值
     max_range: 1.5 # 相机到点的欧氏距离< xm
     bbox_shrink_ratio: 0.0 
     use_prev_init: true # 是否使用上次成功的revc与tevc作为初值
@@ -34,6 +34,7 @@ icp_registration:
     log_debug: true
     log_every_n: 10
     centroid_init: true
+    flip_initial_direction: true # 首次绕模型 X 轴翻转 180°；false 恢复原初值
     use_hexagon_prior: true # 是否开启六矿布局先验
     hexagon_vertex_count: 6
     hexagon_min_observations: 3

@@ -21,6 +21,7 @@ struct RegistrationConfig
   double max_range{1.5}, bbox_shrink_ratio{0.0};
   double fitness_threshold{0.92}, max_fitness_score{0.01};
   bool centroid_init{true}, use_prev_init{true};
+  bool flip_initial_direction{false};  // 首次绕模型 X 轴翻转 180 度，交换 Z 轴两端
 };
 
 struct RegistrationResult

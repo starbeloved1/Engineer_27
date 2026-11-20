@@ -107,6 +107,7 @@ IcpRegistrationNode::IcpRegistrationNode(const rclcpp::NodeOptions& options)
   READ_CONFIG(fitness_threshold);
   READ_CONFIG(max_fitness_score);
   READ_CONFIG(centroid_init);
+  READ_CONFIG(flip_initial_direction);
   READ_CONFIG(use_prev_init);
 #undef READ_CONFIG
   ConstraintConfig constraint_config;
@@ -173,15 +174,26 @@ IcpRegistrationNode::IcpRegistrationNode(const rclcpp::NodeOptions& options)
       source_topic, 10,
       [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr message)
       {
+        if (source_message_ && source_message_->width == message->width &&
+            source_message_->height == message->height &&
+            source_message_->fields == message->fields &&
+            source_message_->is_bigendian == message->is_bigendian &&
+            source_message_->point_step == message->point_step &&
+            source_message_->row_step == message->row_step &&
+            source_message_->data == message->data)
+          return;
         PointCloud cloud;
         pcl::fromROSMsg(*message, cloud);
         source_ = voxelDownsample(cloud, config_.voxel_size);
+        source_message_ = message;
       });
   watchdog_ = create_wall_timer(std::chrono::milliseconds(100),
                                 std::bind(&IcpRegistrationNode::checkTimeout, this));
   RCLCPP_INFO(get_logger(),
-              "26 PCL pipeline ready; target_frame=%s, max_corr_dist=%.3fm, max_score=%.5fm²",
-              target_frame_.c_str(), config_.max_corr_dist, config_.max_fitness_score);
+              "26 PCL pipeline ready; target_frame=%s, max_corr_dist=%.3fm, max_score=%.5fm², "
+              "flip_initial_direction=%s",
+              target_frame_.c_str(), config_.max_corr_dist, config_.max_fitness_score,
+              config_.flip_initial_direction ? "true" : "false");
 }
 
 bool IcpRegistrationNode::fresh(const builtin_interfaces::msg::Time& stamp) const
@@ -233,6 +245,13 @@ void IcpRegistrationNode::receiveCloud(const sensor_msgs::msg::PointCloud2::Cons
   if (!detections_ || !source_ || source_->empty() || camera_k_(2, 2) == 0 ||
       !fresh(message->header.stamp) || !fresh(detections_->header.stamp))
   {
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 3000,
+        "配准输入不可用: detection=%d model=%d camera=%d cloud_age=%.3fs detection_age=%.3fs limit=%.3fs",
+        static_cast<int>(!!detections_), static_cast<int>(source_ && !source_->empty()),
+        static_cast<int>(camera_k_(2, 2) != 0),
+        (now() - rclcpp::Time(message->header.stamp, get_clock()->get_clock_type())).seconds(),
+        detections_ ? (now() - rclcpp::Time(detections_->header.stamp, get_clock()->get_clock_type())).seconds() : -1.0,
+        max_data_age_);
     publishEmpty(header);
     return;
   }

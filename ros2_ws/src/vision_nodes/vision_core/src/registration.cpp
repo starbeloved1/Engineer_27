@@ -110,6 +110,12 @@ RegistrationResult registerClouds(const PointCloud::ConstPtr& source,
   icp.setMaximumIterations(config.max_icp_iter);
   icp.setMaxCorrespondenceDistance(config.max_corr_dist);
   Eigen::Matrix4f init = initial.value_or(Eigen::Matrix4f::Identity());
+  if (!initial && config.flip_initial_direction)
+  {
+    // 绕模型局部 X 轴旋转 180 度，交换主轴 Z 的正负端。
+    init(1, 1) = -1.0f;
+    init(2, 2) = -1.0f;
+  }
   if (!initial && config.centroid_init)
   {
     // 沿用 26 的 float 累加顺序，不额外设置 ICP 停止条件。
@@ -117,7 +123,8 @@ RegistrationResult registerClouds(const PointCloud::ConstPtr& source,
     for (const auto& p : *source) a += Eigen::Vector3f(p.x, p.y, p.z);
     for (const auto& p : *target) b += Eigen::Vector3f(p.x, p.y, p.z);
     init.block<3, 1>(0, 3) =
-        b / static_cast<float>(target->size()) - a / static_cast<float>(source->size());
+        b / static_cast<float>(target->size()) -
+        init.block<3, 3>(0, 0) * (a / static_cast<float>(source->size()));
   }
   PointCloud aligned;
   icp.align(aligned, init);
