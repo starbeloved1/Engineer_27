@@ -11,6 +11,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <vision_msgs/msg/detection2_d_array.hpp>
+#include <mutex>
 
 namespace icp_registration
 {
@@ -21,6 +22,7 @@ class IcpRegistrationNode : public rclcpp::Node
 {
  public:
   explicit IcpRegistrationNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+  rclcpp::CallbackGroup::SharedPtr detectionGroup() const { return detection_group_; }
 
  private:
   void receiveCloud(const sensor_msgs::msg::PointCloud2::ConstSharedPtr& message);
@@ -39,6 +41,8 @@ class IcpRegistrationNode : public rclcpp::Node
   std::optional<rclcpp::Time> last_input_;
   cv::Matx33d camera_k_{cv::Matx33d::zeros()};
   vision_msgs::msg::Detection2DArray::ConstSharedPtr detections_;
+  std::mutex detections_mutex_;
+  rclcpp::CallbackGroup::SharedPtr detection_group_;
   PointCloud::Ptr source_;
   sensor_msgs::msg::PointCloud2::ConstSharedPtr source_message_;
   Eigen::Matrix4f ply_to_energy_{Eigen::Matrix4f::Identity()};

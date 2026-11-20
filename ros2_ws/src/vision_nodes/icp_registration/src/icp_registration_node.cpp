@@ -14,6 +14,13 @@ namespace
 {
 using ColorCloud = pcl::PointCloud<pcl::PointXYZRGB>;
 
+bool isLockedRoi(const vision_msgs::msg::Detection2DArray& detections)
+{
+  return !detections.detections.empty() &&
+         std::all_of(detections.detections.begin(), detections.detections.end(),
+                     [](const auto& detection) { return detection.id == "__locked_yolo_roi__"; });
+}
+
 template <class Cloud>
 sensor_msgs::msg::PointCloud2 cloudMessage(const Cloud& cloud, const std_msgs::msg::Header& header)
 {
@@ -166,12 +173,19 @@ IcpRegistrationNode::IcpRegistrationNode(const rclcpp::NodeOptions& options)
         for (int i = 0; i < 9; ++i) camera_k_.val[i] = message->k[i];
         camera_frame_ = message->header.frame_id;
       });
+  // 检测框独立调度，耗时的点云配准不阻塞接收最新框。
+  detection_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive, false);
+  rclcpp::SubscriptionOptions detection_options;
+  detection_options.callback_group = detection_group_;
   detection_sub_ = create_subscription<vision_msgs::msg::Detection2DArray>(
       detection_topic, rclcpp::QoS(1),
       [this](vision_msgs::msg::Detection2DArray::ConstSharedPtr message)
-      { detections_ = message; });
+      {
+        std::lock_guard<std::mutex> lock(detections_mutex_);
+        detections_ = message;
+      }, detection_options);
   source_sub_ = create_subscription<sensor_msgs::msg::PointCloud2>(
-      source_topic, 10,
+      source_topic, 1,
       [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr message)
       {
         if (source_message_ && source_message_->width == message->width &&
@@ -228,7 +242,11 @@ void IcpRegistrationNode::checkTimeout()
     header.stamp = now();
     publishEmpty(header);
   }
-  detections_.reset();
+  {
+    std::lock_guard<std::mutex> lock(detections_mutex_);
+    if (detections_ && !isLockedRoi(*detections_) && !fresh(detections_->header.stamp))
+      detections_.reset();
+  }
   last_transforms_.clear();
   constraints_->reset();
   last_input_.reset();
@@ -242,30 +260,36 @@ void IcpRegistrationNode::receiveCloud(const sensor_msgs::msg::PointCloud2::Cons
   if (!target_frame_.empty())
     header.frame_id = target_frame_;
   last_header_ = header;
-  if (!detections_ || !source_ || source_->empty() || camera_k_(2, 2) == 0 ||
-      !fresh(message->header.stamp) || !fresh(detections_->header.stamp))
+  vision_msgs::msg::Detection2DArray::ConstSharedPtr detections;
+  {
+    std::lock_guard<std::mutex> lock(detections_mutex_);
+    detections = detections_;
+  }
+  if (!detections || !source_ || source_->empty() || camera_k_(2, 2) == 0 ||
+      !fresh(message->header.stamp) ||
+      (!isLockedRoi(*detections) && !fresh(detections->header.stamp)))
   {
     RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 3000,
         "配准输入不可用: detection=%d model=%d camera=%d cloud_age=%.3fs detection_age=%.3fs limit=%.3fs",
-        static_cast<int>(!!detections_), static_cast<int>(source_ && !source_->empty()),
+        static_cast<int>(!!detections), static_cast<int>(source_ && !source_->empty()),
         static_cast<int>(camera_k_(2, 2) != 0),
         (now() - rclcpp::Time(message->header.stamp, get_clock()->get_clock_type())).seconds(),
-        detections_ ? (now() - rclcpp::Time(detections_->header.stamp, get_clock()->get_clock_type())).seconds() : -1.0,
+        detections ? (now() - rclcpp::Time(detections->header.stamp, get_clock()->get_clock_type())).seconds() : -1.0,
         max_data_age_);
     publishEmpty(header);
     return;
   }
   last_input_ = now();
-  if (detections_->detections.empty())
+  if (detections->detections.empty())
   {
     publishEmpty(header);
     return;
   }
-  if (camera_frame_.empty() || detections_->header.frame_id != camera_frame_)
+  if (camera_frame_.empty() || detections->header.frame_id != camera_frame_)
   {
     RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
                         "检测框与 CameraInfo 坐标系不一致或为空: detections=%s, camera=%s",
-                        detections_->header.frame_id.c_str(), camera_frame_.c_str());
+                        detections->header.frame_id.c_str(), camera_frame_.c_str());
     publishEmpty(header);
     return;
   }
@@ -338,9 +362,9 @@ void IcpRegistrationNode::receiveCloud(const sensor_msgs::msg::PointCloud2::Cons
   geometry_msgs::msg::PoseArray raw_poses, poses;
   raw_poses.header = poses.header = header;
   std::vector<PoseCandidate> candidates;
-  for (size_t index = 0; index < detections_->detections.size(); ++index)
+  for (size_t index = 0; index < detections->detections.size(); ++index)
   {
-    const auto& bbox = detections_->detections[index].bbox;
+    const auto& bbox = detections->detections[index].bbox;
     const double cx = bbox.center.position.x, cy = bbox.center.position.y;
     const double w = bbox.size_x * (1.0 - 2.0 * config_.bbox_shrink_ratio);
     const double h = bbox.size_y * (1.0 - 2.0 * config_.bbox_shrink_ratio);

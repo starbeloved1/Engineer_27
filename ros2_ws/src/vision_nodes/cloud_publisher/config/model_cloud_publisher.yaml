@@ -5,5 +5,5 @@ model_cloud_publisher:
     voxel_size: 0.005 # 5mm 体素降采样
     frame_id: energy_model # 模型点云坐标系
     scale: 0.001 
-    publish_rate: 100.0 
+    publish_rate: 10.0 # 静态模型无需高频重复发送
     topic: /vision/model_cloud # pub

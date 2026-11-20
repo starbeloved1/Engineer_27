@@ -331,7 +331,15 @@ void MtcNode::previewTarget()
   try
   {
     const auto target = selectTarget(manual);
-    valid = energy_->put(targetInBase(target));
+    const auto pose = targetInBase(target);
+    const auto now_steady = std::chrono::steady_clock::now();
+    if (preview_visible_ && now_steady - last_preview_update_ < std::chrono::seconds(1))
+      valid = true;
+    else
+    {
+      valid = energy_->put(pose);
+      if (valid) last_preview_update_ = now_steady;
+    }
   }
   catch (const std::exception &)
   {

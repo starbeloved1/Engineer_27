@@ -1,6 +1,7 @@
 """彩色图 → YOLO 或固定手动 ROI，同时发布检测框与同帧叠框图像。"""
 import math
 from pathlib import Path
+from copy import deepcopy
 import sys
 import time
 
@@ -34,6 +35,14 @@ class YoloDetector(Node):
         if not 1 <= self.visualization_jpeg_quality <= 100:
             raise ValueError("visualization_jpeg_quality 必须在 [1, 100] 范围内")
         self.use_manual_roi = self.declare_parameter("use_manual_roi", False).value
+        self.auto_lock_detection = self.declare_parameter("auto_lock_detection", True).value
+        locked_rate = float(self.declare_parameter("locked_detection_rate_hz", 10.0).value)
+        if not math.isfinite(locked_rate) or locked_rate <= 0:
+            raise ValueError('locked_detection_rate_hz 须为有限正数')
+        self.locked_period = 1.0 / locked_rate
+        self.last_locked_frame_at = None
+        self.locked_detections = None
+        self.locked_image_shape = None
         self.manual_roi = ManualRoiSelector()
         model_path = self.declare_parameter(
             "model_path", "model/best1.pt").value
@@ -83,6 +92,7 @@ class YoloDetector(Node):
             Image, self.color_topic, self.image_callback, input_qos)
         self.roi_window_timer = self.create_timer(1.0 / 30.0, self.poll_manual_roi)
         self.roi_service = self.create_service(Trigger, '~/select_roi', self.select_roi)
+        self.redetect_service = self.create_service(Trigger, '~/redetect', self.redetect)
         self.get_logger().info(
             f"Detector ready: manual_roi={self.use_manual_roi}, model={self.model_path}, "
             f"device={self.device_name}; {self.color_topic} -> {self.detection_topic}")
@@ -121,6 +131,17 @@ class YoloDetector(Node):
             response.message = '已请求显示选框窗口；拖动完成前继续沿用旧 ROI'
         else:
             response.message = '请先设置 /yolo_detector 的 use_manual_roi=true'
+        return response
+
+    def redetect(self, request, response):
+        self.locked_detections = None
+        self.locked_image_shape = None
+        self.last_locked_frame_at = None
+        # 立即撤销下游缓存的固定框，避免重新检测期间继续使用旧框。
+        self.detection_pub.publish(Detection2DArray())
+        response.success = True
+        response.message = '已清除锁定框，等待下一次有效 YOLO 检测'
+        self.get_logger().info(response.message)
         return response
 
     @staticmethod
@@ -172,6 +193,12 @@ class YoloDetector(Node):
             self.get_logger().error(f"检测叠框图像生成失败: {error}", throttle_duration_sec=5.0)
 
     def image_callback(self, message: Image):
+        now = time.monotonic()
+        if (not self.use_manual_roi and self.locked_detections is not None
+                and self.last_locked_frame_at is not None
+                and now - self.last_locked_frame_at < self.locked_period):
+            return
+        self.last_locked_frame_at = now
         try:
             image = self.bridge.imgmsg_to_cv2(message, desired_encoding="bgr8")
         except CvBridgeError as error:
@@ -190,6 +217,17 @@ class YoloDetector(Node):
                 self.append_detection(detections, message.header, self.manual_roi.roi,
                                       'manual_roi', 1.0, manual=True)
         else:
+            shape = (message.width, message.height, message.header.frame_id)
+            if self.locked_detections is not None and self.locked_image_shape != shape:
+                self.locked_detections = None
+                self.locked_image_shape = None
+                self.get_logger().warning('图像尺寸或坐标系变化，已清除锁定框')
+        if not self.use_manual_roi and self.locked_detections is not None:
+            # 新时间戳表示此框用于当前图像，不表示重新执行了检测。
+            detections.detections = deepcopy(self.locked_detections)
+            for detection in detections.detections:
+                detection.header = message.header
+        elif not self.use_manual_roi:
             self.load_model()
             result = self.model.predict(
                 source=image, conf=self.conf_thres, iou=self.iou_thres,
@@ -200,6 +238,12 @@ class YoloDetector(Node):
                         boxes.xyxy.numpy(), boxes.conf.numpy(), boxes.cls.numpy()):
                     self.append_detection(detections, message.header, xyxy,
                                           str(int(class_id)), confidence)
+            if self.auto_lock_detection and detections.detections:
+                for detection in detections.detections:
+                    detection.id = '__locked_yolo_roi__'
+                self.locked_detections = deepcopy(detections.detections)
+                self.locked_image_shape = shape
+                self.get_logger().info('已锁定首次有效检测框；移动相机或目标后请调用 ~/redetect')
 
         # 空数组明确表示这一帧没有检测到目标，时间戳仍是原图采集时刻
         self.detection_pub.publish(detections)
@@ -208,7 +252,7 @@ class YoloDetector(Node):
         if self.frame_count == 1 or (self.log_every_n and self.frame_count % self.log_every_n == 0):
             elapsed = (time.perf_counter() - start) * 1000
             self.get_logger().info(
-                f"{'Manual ROI' if self.use_manual_roi else 'YOLO'}: {elapsed:.1f} ms, "
+                f"{'Manual ROI' if self.use_manual_roi else 'Locked ROI' if self.locked_detections is not None else 'YOLO'}: {elapsed:.1f} ms, "
                 f"{len(detections.detections)} detections, "
                 f"input={message.width}x{message.height}")
 

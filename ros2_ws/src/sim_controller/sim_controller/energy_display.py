@@ -51,7 +51,8 @@ class EnergyDisplay(Node):
             QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self.client = self.create_client(GetPlanningScene, '/get_planning_scene')
         self.pending = None
-        self.timer = self.create_timer(.2, self.query)
+        # 显示使用的场景查询 1 Hz 即可；规划和执行仍使用 MoveIt 的实时场景。
+        self.timer = self.create_timer(1.0, self.query)
         self.marker(False)
 
     def query(self):

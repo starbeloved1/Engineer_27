@@ -28,7 +28,7 @@
 # 独立录制节点
 /video_recorder:
   ros__parameters:
-    video: true # 是否开启录制
+    video: false # 是否开启录制
     color_topic: /camera/camera/color/image_raw
     output_dir: video 
     fps: 0.0 

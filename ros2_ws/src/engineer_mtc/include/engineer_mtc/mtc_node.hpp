@@ -4,6 +4,7 @@
 #include "engineer_mtc/vision_target_buffer.hpp"
 #include <array>
 #include <atomic>
+#include <chrono>
 #include <engineer_mtc/msg/pick_status.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -69,6 +70,7 @@ private:
   size_t next_stage_ = 0;
   std::atomic<bool> plan_valid_{false};
   bool preview_visible_ = false;
+  std::chrono::steady_clock::time_point last_preview_update_{};
   std::thread worker_;
   std::unique_ptr<EnergyScene> energy_;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;

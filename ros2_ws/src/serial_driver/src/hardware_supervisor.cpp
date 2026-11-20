@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <optional>
 #include <controller_manager_msgs/srv/list_controllers.hpp>
 #include <controller_manager_msgs/srv/switch_controller.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -16,15 +17,21 @@ public:
   HardwareSupervisor() : Node("hardware_supervisor")
   {
     timeout_ = declare_parameter("status_timeout", .1);
+    poll_interval_ = declare_parameter("controller_poll_interval", .5);
     names_ = declare_parameter("controllers", std::vector<std::string>{"arm_controller", "gripper_controller"});
-    if (!std::isfinite(timeout_) || timeout_ <= 0 || names_.empty())
+    if (!std::isfinite(timeout_) || timeout_ <= 0 || !std::isfinite(poll_interval_) ||
+        poll_interval_ <= 0 || names_.empty())
       throw std::invalid_argument("控制器列表及状态超时无效");
     list_ = create_client<List>("/controller_manager/list_controllers");
     switch_ = create_client<Switch>("/controller_manager/switch_controller");
     sub_ = create_subscription<msg::HardwareStatus>(
         "/serial_driver/status", rclcpp::QoS(1).reliable().transient_local(),
         [this](msg::HardwareStatus::ConstSharedPtr m) {
-          if (!status_ || status_->control_epoch != m->control_epoch) reset_ = true;
+          if (!status_ || status_->control_epoch != m->control_epoch)
+          {
+            reset_ = true;
+            urgent_ = true;
+          }
           status_ = m; received_at_ = std::chrono::steady_clock::now();
         });
     timer_ = create_wall_timer(std::chrono::milliseconds(50), [this] { update(); });
@@ -41,8 +48,16 @@ private:
   }
   void update()
   {
-    if (!allowed()) reset_ = true;
+    const bool enable_now = allowed();
+    if (!last_allowed_ || *last_allowed_ != enable_now) urgent_ = true;
+    last_allowed_ = enable_now;
+    if (!enable_now) reset_ = true;
     if (pending_ || !list_->service_is_ready() || !switch_->service_is_ready()) return;
+    const auto now_steady = std::chrono::steady_clock::now();
+    if (!urgent_ && now_steady < next_poll_) return;
+    urgent_ = false;
+    next_poll_ = now_steady + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                                  std::chrono::duration<double>(poll_interval_));
     pending_ = true;
     list_->async_send_request(std::make_shared<List::Request>(), [this](rclcpp::Client<List>::SharedFuture f) {
       pending_ = false;
@@ -71,12 +86,15 @@ private:
       pending_ = true;
       switch_->async_send_request(request, [this](rclcpp::Client<Switch>::SharedFuture result) {
         pending_ = false;
+        urgent_ = true;  // 及时确认切换结果，必要时完成清轨后的重新启用。
         if (!result.get()->ok) RCLCPP_WARN(get_logger(), "控制器切换未完成，保持硬件输出门控并重试");
       });
     });
   }
-  double timeout_;
-  bool pending_ = false, reset_ = true;
+  double timeout_, poll_interval_;
+  bool pending_ = false, reset_ = true, urgent_ = true;
+  std::optional<bool> last_allowed_;
+  std::chrono::steady_clock::time_point next_poll_{};
   std::vector<std::string> names_;
   std::chrono::steady_clock::time_point received_at_{};
   msg::HardwareStatus::ConstSharedPtr status_;

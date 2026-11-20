@@ -1,6 +1,8 @@
 yolo_detector:
   ros__parameters:
     use_manual_roi: false # 是否启用手动 roi
+    auto_lock_detection: true # 首次有效检测后锁定框；仅适用于静止目标
+    locked_detection_rate_hz: 10.0 # 锁定后更新当前图像与框的频率
     model_path: model/best1.pt
     color_topic: /camera/camera/color/image_raw
     detection_topic: /vision/yolo/detections
