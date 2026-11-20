@@ -17,6 +17,12 @@
     pointcloud.stream_index_filter: 0
     pointcloud.allow_no_texture_points: false
     pointcloud.ordered_pc: false
+    # 本机 NEON 点云模块的实际参数名；标准参数保留以兼容其他机器。
+    pointcloud__neon_.enable: true
+    pointcloud__neon_.stream_filter: 2
+    pointcloud__neon_.stream_index_filter: 0
+    pointcloud__neon_.allow_no_texture_points: false
+    pointcloud__neon_.ordered_pc: false
     publish_tf: true
 
 # 独立录制节点

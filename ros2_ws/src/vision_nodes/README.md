@@ -70,6 +70,6 @@ Image 面板选择 `/vision/visualization/image/compressed`，取消原始叠框
 远端只需订阅压缩图，无需再订阅 PointCloud2。
 
 投影使用彩色 CameraInfo 的内参及畸变参数，并在点云时间戳查询 TF 转入彩色光学坐标系。
-从最多 8 帧点云中选取与图像采集时间最接近的一帧，默认时间差上限 `overlay_cloud_max_age: 0.2` 秒；这是异步显示叠加，不是严格同帧同步。
+从最多 8 帧点云中选取与图像采集时间最接近的一帧，默认时间差上限 `overlay_cloud_max_age: 0.8` 秒；这是异步显示叠加，不是严格同帧同步。
 缺少有效点云、TF 或相机内参时只显示检测框，过期云不继续绘制。ICP 尚未成功时没有模型投影点属于正常情况。
 `overlay_cloud_max_points: 3000` 和 `overlay_cloud_radius: 1` 控制显示密度；`overlay_cloud_enabled: false` 关闭叠加。
