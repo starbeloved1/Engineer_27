@@ -70,7 +70,7 @@ class CloudOverlay:
         self.enabled = node.declare_parameter('overlay_cloud_enabled', True).value
         topic = node.declare_parameter('overlay_cloud_topic', '/vision/icp/aligned_cloud').value
         camera_topic = node.declare_parameter('overlay_camera_info_topic', '/camera/camera/color/camera_info').value
-        self.max_age = float(node.declare_parameter('overlay_cloud_max_age', 0.8).value)
+        self.max_age = float(node.declare_parameter('overlay_cloud_max_age', 1.5).value)
         self.max_points = node.declare_parameter('overlay_cloud_max_points', 3000).value
         self.radius = node.declare_parameter('overlay_cloud_radius', 1).value
         if (not math.isfinite(self.max_age) or self.max_age <= 0

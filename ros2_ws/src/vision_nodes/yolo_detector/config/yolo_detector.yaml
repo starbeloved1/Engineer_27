@@ -8,7 +8,7 @@ yolo_detector:
     overlay_cloud_enabled: true
     overlay_cloud_topic: /vision/icp/aligned_cloud # ICP 模型投影，橙红色
     overlay_camera_info_topic: /camera/camera/color/camera_info
-    overlay_cloud_max_age: 0.8 # 与图像采集时间差上限，秒
+    overlay_cloud_max_age: 1.5 # 与图像采集时间差上限，秒
     overlay_cloud_max_points: 3000 # 仅限制显示，不影响 ICP
     overlay_cloud_radius: 1 # 投影点半径，像素
     visualization_jpeg_quality: 80 # 远程 compressed 图像 JPEG 质量，1~100

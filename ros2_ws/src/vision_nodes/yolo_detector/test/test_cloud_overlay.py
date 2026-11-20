@@ -111,7 +111,7 @@ class ProjectionTest(unittest.TestCase):
             np.testing.assert_array_equal(output[40, 60], [0, 80, 255])
             self.assertFalse(image.any())  # 不修改检测输入
             header = Header(frame_id="color_optical")
-            header.stamp.sec = 11
+            header.stamp.sec = 12  # 超过默认 1.5 秒门限
             np.testing.assert_array_equal(overlay.draw(image, header), image)  # 过期
             empty = PointCloud2(header=header)
             overlay.clouds.append(empty)
