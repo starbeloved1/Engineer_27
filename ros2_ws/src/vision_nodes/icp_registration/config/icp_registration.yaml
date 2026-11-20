@@ -24,7 +24,7 @@ icp_registration:
     max_corr_dist: 1.0 # 最大对应距离< xm
     min_points: 80 # ROI 提取和过滤后的观测点下限
     sor_mean_k: 20 
-    sor_std_mul: 1.5 # 放宽 SOR，减少有效边缘点被剔除 
+    sor_std_mul: 1.5 # 放宽 SOR，减少有效边缘点被剔除
     max_range: 1.5 # 相机到点的欧氏距离< xm
     bbox_shrink_ratio: 0.0 
     use_prev_init: true # 是否使用上次成功的revc与tevc作为初值
