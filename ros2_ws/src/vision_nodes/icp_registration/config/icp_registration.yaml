@@ -21,7 +21,7 @@ icp_registration:
 
     max_icp_iter: 120 # PCL 最大迭代次数
     voxel_size: 0.004 # 4mm 体素下采样，保留更多端部细节
-    max_corr_dist: 1.0 # 最大对应距离< xm
+    max_corr_dist: 0.0004 # 最大对应距离 0.4 mm，单位 m
     min_points: 80 # ROI 提取和过滤后的观测点下限
     sor_mean_k: 20 
     sor_std_mul: 1.5 # 放宽 SOR，减少有效边缘点被剔除
