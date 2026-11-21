@@ -45,7 +45,8 @@ struct MotionStages
 };
 
 std::unique_ptr<mtc::Task> makeTask(const rclcpp::Node::SharedPtr &, const TaskSettings &,
-                                    const std::string &name);
+                                    const std::string &name,
+                                    const moveit::core::RobotModelConstPtr &model = {});
 std::unique_ptr<mtc::stages::PredicateFilter> currentState();
 std::unique_ptr<mtc::stages::MoveTo> gripperMove(const MotionStages &, bool close);
 std::unique_ptr<mtc::stages::Connect> armConnect(const MotionStages &, const std::string &name);
@@ -54,6 +55,6 @@ std::unique_ptr<mtc::stages::MoveRelative> relativeMove(const MotionStages &, co
                                                         bool backward = false);
 std::unique_ptr<mtc::stages::ComputeIK> contactIK(
     const MotionStages &, mtc::Stage &monitor, const std::string &name,
-    const Eigen::Isometry3d &goal);
+    const Eigen::Isometry3d &goal, bool pick = false);
 std::string storedObjectId(const std::string &active_id);
 } // namespace engineer_mtc

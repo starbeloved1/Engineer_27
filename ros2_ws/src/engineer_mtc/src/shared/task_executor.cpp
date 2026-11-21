@@ -42,10 +42,11 @@ void MtcNode::updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr 
   }
 }
 
-void MtcNode::prepareExecution(const moveit::task_constructor::SolutionBase &selected)
+void MtcNode::prepareExecution(moveit::task_constructor::Task &task,
+                               const moveit::task_constructor::SolutionBase &selected,
+                               size_t first_stage, size_t end_stage)
 {
   std::array<bool, 6> found{};
-  stage_solutions_.fill(moveit_task_constructor_msgs::msg::Solution{});
   std::function<void(const moveit::task_constructor::SolutionBase &)> visit;
   visit = [&](const auto &solution)
   {
@@ -54,10 +55,10 @@ void MtcNode::prepareExecution(const moveit::task_constructor::SolutionBase &sel
     if (name.rfind("stage_", 0) == 0 && name.size() > 6 && name[6] >= '1' && name[6] <= '6')
     {
       const size_t i = name[6] - '1';
-      if (i < next_stage_ || i >= end_stage_ || found[i])
+      if (i < first_stage || i >= end_stage || found[i])
         throw std::runtime_error("业务阶段解超出当前任务范围或重复");
       stage_solutions_[i] = moveit_task_constructor_msgs::msg::Solution();
-      solution.toMsg(stage_solutions_[i], &task_->introspection());
+      solution.toMsg(stage_solutions_[i], &task.introspection());
       if (stage_solutions_[i].sub_trajectory.empty())
         throw std::runtime_error("业务阶段解为空");
       // MTC can serialize backward and connecting stages as full scenes. Only
@@ -89,7 +90,7 @@ void MtcNode::prepareExecution(const moveit::task_constructor::SolutionBase &sel
       visit(*wrapped->wrapped());
   };
   visit(selected);
-  for (size_t i = next_stage_; i < end_stage_; ++i)
+  for (size_t i = first_stage; i < end_stage; ++i)
     if (!found[i])
       throw std::runtime_error("轨迹缺少阶段 " + std::to_string(i + 1));
 }

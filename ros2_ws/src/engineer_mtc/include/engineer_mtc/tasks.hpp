@@ -12,7 +12,7 @@ struct TaskSettings
   std::string group, tip, base_frame, pipeline, planner_id;
   double planning_time, velocity_scale, acceleration_scale, cartesian_step, distance;
   bool include_approach;
-  unsigned int max_ik_solutions;
+  unsigned int max_ik_solutions, pick_max_ik_solutions;
   Eigen::Vector3d approach_axis;
   Eigen::Isometry3d tip_to_tcp;
   std::string gripper_group = "gripper", object_id = "energy";
@@ -24,8 +24,11 @@ struct TaskSettings
 };
 
 std::unique_ptr<moveit::task_constructor::Task>
-createPickTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
-               const GraspTargets &targets);
+createPregraspTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
+                   const GraspTargets &targets);
+std::unique_ptr<moveit::task_constructor::Task>
+createPickTailTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
+                   const GraspTargets &targets, const planning_scene::PlanningSceneConstPtr &start_scene);
 std::unique_ptr<moveit::task_constructor::Task>
 createPlaceTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
                 const Eigen::Isometry3d &storage_tip,

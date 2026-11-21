@@ -107,13 +107,17 @@ MotionStages::MotionStages(const rclcpp::Node::SharedPtr &node, const TaskSettin
 }
 
 std::unique_ptr<mtc::Task> makeTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
-                                    const std::string &name)
+                                    const std::string &name,
+                                    const moveit::core::RobotModelConstPtr &robot_model)
 {
   // Humble normalizes even a leading slash in the Task namespace.
   // Use the bare node name for /engineer_mtc/{description,statistics,solution}.
   auto task = std::make_unique<mtc::Task>(node->get_name());
   task->setName(name);
-  task->loadRobotModel(node);
+  if (robot_model)
+    task->setRobotModel(robot_model);
+  else
+    task->loadRobotModel(node);
   const auto &model = task->getRobotModel();
   if (!model->hasLinkModel(settings.tip) || !model->hasJointModelGroup(settings.group) ||
       !model->hasJointModelGroup(settings.gripper_group))
@@ -190,7 +194,7 @@ std::unique_ptr<mtc::stages::MoveRelative> relativeMove(const MotionStages &moti
 
 std::unique_ptr<mtc::stages::ComputeIK> contactIK(
     const MotionStages &motion, mtc::Stage &monitor, const std::string &name,
-    const Eigen::Isometry3d &goal)
+    const Eigen::Isometry3d &goal, bool pick)
 {
   auto pose = std::make_unique<ContactPose>();
   pose->setMonitoredStage(&monitor);
@@ -201,7 +205,7 @@ std::unique_ptr<mtc::stages::ComputeIK> contactIK(
   auto ik = std::make_unique<mtc::stages::ComputeIK>(name, std::move(pose));
   ik->setGroup(motion.settings.group);
   ik->setIKFrame(motion.settings.tip);
-  ik->setMaxIKSolutions(motion.settings.max_ik_solutions);
+  ik->setMaxIKSolutions(pick ? motion.settings.pick_max_ik_solutions : motion.settings.max_ik_solutions);
   ik->setMinSolutionDistance(.1);
   ik->setTimeout(std::min(1., motion.settings.planning_time * .2));
   ik->properties().configureInitFrom(mtc::Stage::INTERFACE, {"target_pose"});

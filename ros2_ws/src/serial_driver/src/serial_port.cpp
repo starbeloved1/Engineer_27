@@ -8,6 +8,7 @@
 #include <sys/file.h>
 #include <termios.h>
 #include <unistd.h>
+#include <utility>
 
 namespace serial_driver
 {
@@ -31,7 +32,7 @@ speed_t baudValue(int baud)
 }
 }
 SerialPort::~SerialPort() { close(); }
-void SerialPort::open(const std::string &device, int baud)
+void SerialPort::open(const std::string &device, int baud, bool flush_output)
 {
   close();
   const auto speed = baudValue(baud);
@@ -47,20 +48,23 @@ void SerialPort::open(const std::string &device, int baud)
     tty.c_cc[VMIN] = 0; tty.c_cc[VTIME] = 0;
     if (cfsetispeed(&tty, speed) || cfsetospeed(&tty, speed) || tcsetattr(fd_, TCSANOW, &tty))
       fail("配置串口 8N1");
-    if (tcflush(fd_, TCIOFLUSH)) fail("清理串口缓冲");
+    if (tcflush(fd_, flush_output ? TCIOFLUSH : TCIFLUSH)) fail("清理串口缓冲");
   }
   catch (...) { close(); throw; }
 }
+void SerialPort::swap(SerialPort &other) noexcept { std::swap(fd_, other.fd_); }
 void SerialPort::close()
 {
   if (fd_ >= 0) { ::close(fd_); fd_ = -1; }
 }
-std::vector<uint8_t> SerialPort::readAvailable()
+std::vector<uint8_t> SerialPort::readAvailable(int timeout_ms)
 {
   pollfd p{fd_, POLLIN, 0};
-  if (::poll(&p, 1, 0) < 0 && errno != EINTR) fail("串口 poll");
+  const int ready = ::poll(&p, 1, timeout_ms);
+  if (ready < 0 && errno != EINTR) fail("串口 poll");
   if (p.revents & (POLLHUP | POLLERR | POLLNVAL))
     throw std::runtime_error("串口断开或发生 I/O 错误");
+  if (ready <= 0 || !(p.revents & POLLIN)) return {};
   std::vector<uint8_t> result;
   uint8_t buffer[256];
   for (int count = 0; count < 16; ++count)

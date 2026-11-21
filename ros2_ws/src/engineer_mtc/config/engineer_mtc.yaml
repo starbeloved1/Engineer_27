@@ -15,7 +15,8 @@ engineer_mtc:
     planning_pipeline: ompl
     planner_id: RRTConnectkConfigDefault
     planning_time: 5.0 # s，规划预算
-    max_ik_solutions: 10 # 每个目标的 IK 候选解上限
+    max_ik_solutions: 10 # 存矿 IK 候选解上限及 OMPL 规划尝试次数
+    pick_max_ik_solutions: 20 # 取矿预抓取 IK 候选解上限
     velocity_scaling: 0.2
     acceleration_scaling: 0.7
 
@@ -31,13 +32,13 @@ engineer_mtc:
     cartesian_step: 0.005 # m，直线插值步长
 
     # auto 连续执行；step 每阶段完成后等待
-    execution_mode: step
+    execution_mode: auto
     gripper_group: gripper
     object_id: energy
     touch_links: [link_6] # 夹取和带矿时允许接触目标矿的 link
     # 拉取轴在 URDF 中约为 -Z（朝大头），由原 PLY +Z 精确转换而来。
     extraction_axis: [0.000000116949, 0.002550757964758, -0.999996746811604]
-    extraction_distance: 0.10 # m
+    extraction_distance: 0.15 # m
     storage_insertion_axis: [0.0, 0.0, -1.0] # 基座坐标系下的入槽方向
     # storage_contact_objects: [slot_contact_surface] # 启用前确认 ID 已在场景中
     storage_distance: 0.10 # 沿入槽方向直线移动的距离，m

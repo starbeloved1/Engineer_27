@@ -2,10 +2,12 @@
 #include "shared/motion_stages.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
+#include <limits>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/task_constructor/introspection.h>
 #include <moveit/task_constructor/storage.h>
+#include <optional>
 #include <sstream>
 #include <tf2_eigen/tf2_eigen.hpp>
 
@@ -34,10 +36,14 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   settings_.acceleration_scale = parameter(*this, "acceleration_scaling", 0.2);
   settings_.cartesian_step = parameter(*this, "cartesian_step", 0.005);
   settings_.distance = parameter(*this, "pregrasp_distance", 0.07);
-  const int max_ik = parameter(*this, "max_ik_solutions", 10);
-  if (max_ik < 1 || max_ik > 64)
-    throw std::invalid_argument("max_ik_solutions 须在 1 到 64 之间");
-  settings_.max_ik_solutions = max_ik;
+  const auto maxIkSolutions = [this](const std::string &name, int default_value) {
+    const int count = parameter(*this, name, default_value);
+    if (count < 1 || count > 64)
+      throw std::invalid_argument(name + " 须在 1 到 64 之间");
+    return static_cast<unsigned int>(count);
+  };
+  settings_.max_ik_solutions = maxIkSolutions("max_ik_solutions", 10);
+  settings_.pick_max_ik_solutions = maxIkSolutions("pick_max_ik_solutions", 20);
   settings_.include_approach = parameter(*this, "include_approach", true);
   if (!settings_.include_approach)
     throw std::invalid_argument("外部取矿要求 include_approach=true");
@@ -442,11 +448,13 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
   }
   setStatus(Status::PLANNING, 0, "规划" + task_name);
   command.unlock();
+  pick_tail_task_.reset();
   moveit_msgs::msg::DisplayTrajectory empty;
   display_pub_->publish(empty);
   clearPreview();
   try
   {
+    std::optional<GraspTargets> pick_targets;
     if (place)
     {
       checkFreshJoints();
@@ -470,9 +478,9 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
         throw std::runtime_error("上次接触动作中断，请先确认矿和场景状态");
       extracted_ = false;
       const auto target = selectTarget(request == PlanRequest::Manual);
-      const auto targets =
-          computeGraspTargets(targetInBase(target), object_to_tcp_, settings_.tip_to_tcp,
-                              settings_.approach_axis, settings_.distance);
+      pick_targets = computeGraspTargets(targetInBase(target), object_to_tcp_, settings_.tip_to_tcp,
+                                          settings_.approach_axis, settings_.distance);
+      const auto &targets = *pick_targets;
       owned_ = true;
       {
         std::lock_guard<std::mutex> l(scene_mutex_);
@@ -487,12 +495,13 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       }
       publishTargets(targets, target.header.stamp);
       publishPreview(targets.pregrasp_tip_base * settings_.tip_to_tcp, targets.grasp_tcp_base, false);
-      task_ = createPickTask(shared_from_this(), settings_, targets);
+      task_ = createPregraspTask(shared_from_this(), settings_, targets);
     }
     task_->init();
-    if (!task_->plan(8) || task_->solutions().empty())
+    const auto max_task_solutions = place ? 8 : 20;
+    if (!task_->plan(max_task_solutions) || task_->solutions().empty())
     {
-      if (const auto *ik = task_->findChild("stage_2: grasp and attach/grasp IK"))
+      if (const auto *ik = task_->findChild("stage_1: pregrasp/pregrasp IK"))
         for (const auto &candidate : ik->solutions())
         {
           std::vector<double> q;
@@ -501,51 +510,105 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
           std::ostringstream values;
           for (double x : q)
             values << x << " ";
-          RCLCPP_WARN(get_logger(), "grasp IK candidate: %s", values.str().c_str());
+          RCLCPP_WARN(get_logger(), "pregrasp IK candidate: %s", values.str().c_str());
         }
       std::ostringstream reason;
       task_->explainFailure(reason);
       throw std::runtime_error(task_name + "规划失败: " + reason.str());
     }
-    // 与 cancel 串行提交规划结果，避免取消请求被刚生成的 READY 状态覆盖。
-    std::lock_guard<std::mutex> commit(command_mutex_);
-    if (cancel_requested_)
-      throw std::runtime_error("规划已取消");
-    moveit_task_constructor_msgs::msg::Solution serialized;
-    moveit::task_constructor::SolutionBaseConstPtr selected;
+    std::unique_ptr<moveit::task_constructor::Task> selected_tail_task;
+    moveit_task_constructor_msgs::msg::Solution serialized, serialized_tail;
+    moveit::task_constructor::SolutionBaseConstPtr selected, selected_tail;
+    double selected_cost = std::numeric_limits<double>::infinity();
+    size_t complete_pick_candidates = 0;
     std::string rejected;
-    // MTC 按代价升序排列解，从中选第一个符合串口关节范围的完整解。
-    for (const auto &candidate : task_->solutions())
+    const auto serializeExecutable = [&](moveit::task_constructor::Task &task,
+                                         const moveit::task_constructor::SolutionBase &solution,
+                                         moveit_task_constructor_msgs::msg::Solution &message)
     {
-      moveit_task_constructor_msgs::msg::Solution candidate_message;
-      candidate->toMsg(candidate_message, &task_->introspection());
+      solution.toMsg(message, &task.introspection());
       try
       {
-        checkTrajectoryLimits(candidate_message);
+        checkTrajectoryLimits(message);
       }
       catch (const std::runtime_error &error)
       {
         rejected = error.what();
+        return false;
+      }
+      return true;
+    };
+    for (const auto &candidate : task_->solutions())
+    {
+      if (cancel_requested_)
+        throw std::runtime_error("规划已取消");
+      moveit_task_constructor_msgs::msg::Solution candidate_message;
+      if (!serializeExecutable(*task_, *candidate, candidate_message))
+        continue;
+      if (place)
+      {
+        serialized = std::move(candidate_message);
+        selected = candidate;
+        selected_cost = candidate->cost();
+        break;
+      }
+
+      // 为每个预抓取末态独立规划抓取和拉出，按两份轨迹的总代价选解。
+      auto tail = createPickTailTask(shared_from_this(), settings_, *pick_targets, candidate->end()->scene());
+      tail->init();
+      if (!tail->plan(max_task_solutions) || tail->solutions().empty())
+      {
+        std::ostringstream reason;
+        tail->explainFailure(reason);
+        rejected = "接近夹紧或拉出规划失败: " + reason.str();
         continue;
       }
-      serialized = std::move(candidate_message);
-      selected = candidate;
-      break;
+      for (const auto &tail_candidate : tail->solutions())
+      {
+        moveit_task_constructor_msgs::msg::Solution tail_message;
+        if (!serializeExecutable(*tail, *tail_candidate, tail_message))
+          continue;
+        ++complete_pick_candidates;
+        const double cost = candidate->cost() + tail_candidate->cost();
+        if (cost < selected_cost)
+        {
+          serialized = std::move(candidate_message);
+          serialized_tail = std::move(tail_message);
+          selected = candidate;
+          selected_tail = tail_candidate;
+          selected_tail_task = std::move(tail);
+          selected_cost = cost;
+        }
+        break;  // 同一预抓取末态只需保留代价最小的可执行尾段。
+      }
     }
+    // 与 cancel 串行提交两份轨迹，避免取消请求被刚生成的 READY 状态覆盖。
+    std::lock_guard<std::mutex> commit(command_mutex_);
+    if (cancel_requested_)
+      throw std::runtime_error("规划已取消");
     if (!selected)
       throw std::runtime_error(task_name + "候选解均不可执行：" + rejected);
     RCLCPP_INFO(get_logger(), "%s：找到 %zu 个完整解，选中代价 %.3f",
-                task_name.c_str(), task_->solutions().size(), selected->cost());
-    prepareExecution(*selected);
-    task_->introspection().publishSolution(*selected);
+                task_name.c_str(), place ? task_->solutions().size() : complete_pick_candidates, selected_cost);
+    stage_solutions_.fill(moveit_task_constructor_msgs::msg::Solution{});
+    prepareExecution(*task_, *selected, next_stage_, place ? end_stage_ : 1);
+    if (selected_tail)
+      prepareExecution(*selected_tail_task, *selected_tail, 1, end_stage_);
     moveit_msgs::msg::DisplayTrajectory display;
     display.model_id = task_->getRobotModel()->getName();
     display.trajectory_start = serialized.start_scene.robot_state;
-    for (const auto &segment : serialized.sub_trajectory)
-      if (!segment.trajectory.joint_trajectory.points.empty())
-        display.trajectory.push_back(segment.trajectory);
+    for (const auto *solution : {&serialized, &serialized_tail})
+      for (const auto &segment : solution->sub_trajectory)
+        if (!segment.trajectory.joint_trajectory.points.empty())
+          display.trajectory.push_back(segment.trajectory);
     if (display.trajectory.empty())
       throw std::runtime_error("完整解没有运动轨迹");
+    task_->introspection().publishSolution(*selected);
+    if (selected_tail)
+    {
+      selected_tail_task->introspection().publishSolution(*selected_tail);
+      pick_tail_task_ = std::move(selected_tail_task);
+    }
     display_pub_->publish(display);
     plan_valid_ = true;
     response.success = true;

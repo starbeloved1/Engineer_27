@@ -1,9 +1,9 @@
-use_mock_hardware: true # true：模拟硬件；false：接真实 MCU。
-serial_port: /dev/ttyUSB0 
+use_mock_hardware: false # true：模拟硬件；false：接真实 MCU。
+serial_port: /dev/ttyACM0 # 启动时从 USB 串口的有效反馈识别设备，也可填具体路径。
 baud_rate: 115200
 tx_rate: 20.0 # Hz，周期发送最新目标，不积压历史目标
 feedback_rate: 50.0 # Hz，模拟反馈及硬件状态话题频率
-receive_timeout_ms: 100.0 
+receive_timeout_ms: 300.0 
 startup_timeout_ms: 3000.0 
 
 

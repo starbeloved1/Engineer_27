@@ -36,11 +36,14 @@ private:
   bool freshLocked() const;
   bool enabledLocked() const;
   unsigned interfaceMask(const std::vector<std::string> &) const;
-  void stopWorker();
-  void ioLoop();
+  std::string openAutomaticPort();
+  void stopWorkers();
+  void receiveLoop();
+  void transmitLoop();
+  void statusLoop();
   void receiveBytesLocked(const uint8_t *, size_t);
   void acceptFeedbackLocked(const Feedback &);
-  void publishStatus();
+  void publishStatus(bool &fault_reported);
   void failLocked(const std::string &);
   void validatePositions(const JointValues &) const;
 
@@ -55,6 +58,7 @@ private:
   Feedback feedback_;
   Feedback mock_feedback_;
   uint64_t epoch_ = 0, read_epoch_ = 0, target_epoch_ = 0, rx_frames_ = 0, tx_frames_ = 0;
+  uint64_t rejected_frames_ = 0;
   Clock::time_point last_rx_{};
   Clock::time_point last_mock_tx_{};
   builtin_interfaces::msg::Time feedback_stamp_;
@@ -63,7 +67,7 @@ private:
   std::mutex mutex_;
   std::condition_variable wake_;
   std::atomic<bool> running_{false};
-  std::thread worker_;
+  std::thread receive_worker_, transmit_worker_, status_worker_;
   rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<msg::HardwareStatus>::SharedPtr status_pub_;
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr mode_pub_;

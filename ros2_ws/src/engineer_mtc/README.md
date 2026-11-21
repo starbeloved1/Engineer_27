@@ -1,8 +1,8 @@
 # engineer_mtc
 
-同一个 ROS 包提供外部取矿和持矿存车。两个 MTC 任务各自读取当前关节状态。
+同一个 ROS 包提供外部取矿和持矿存车。取矿由两个 MTC Task 串接，存矿独立读取当前关节状态。
 
-- `src/pick/task.cpp` 组装阶段 1–3。各阶段实现在同目录的 `stage_N.cpp`。
+- `src/pick/task.cpp` 分别组装阶段 1，以及阶段 2–3。第二个 Task 以第一个 Task 的规划末态为起点。
 - `src/place/task.cpp` 组装阶段 4–6。各阶段实现在同目录的 `stage_N.cpp`。
 - `src/shared/` 保存两任务使用的轨迹执行、运动阶段构造、矿场景和几何换算。
 
@@ -19,7 +19,7 @@
 
 ## 服务
 
-1. 调用 `/engineer_mtc/plan` 使用视觉缓存，或调用 `/engineer_mtc/plan_manual` 使用手动缓存。两个入口都只规划阶段 1–3，成功后预览停在拔离。
+1. 调用 `/engineer_mtc/plan` 使用视觉缓存，或调用 `/engineer_mtc/plan_manual` 使用手动缓存。一次调用会规划两个取矿 Task，并在 `/engineer_mtc/display_planned_path` 发布阶段 1–3 的合并预览。
 2. 调用 `/engineer_mtc/execute` 开始取矿。默认 `step`，每次收到 `WAITING_NEXT` 后调用 `/engineer_mtc/next_stage`。模式 `auto` 会自动执行当前任务内的后续阶段。
 3. 阶段 3 返回 `SUCCEEDED` 并报告矿已附着后，调用 `/engineer_mtc/plan_place`。它查询场景中的持矿变换，并用 MoveIt 当前关节状态规划阶段 4–6。随后再次调用 `execute`，分步模式继续使用 `next_stage`。
 4. `/engineer_mtc/cancel` 取消当前任务。存车规划失败时可以保持持矿状态重试。接触阶段执行中断后，请检查实物和场景再复位节点。执行器会在确认旧轨迹停止后恢复临时碰撞许可，并保留已经发生的附着或释放。

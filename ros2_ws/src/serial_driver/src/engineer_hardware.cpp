@@ -1,7 +1,9 @@
 #include "serial_driver/engineer_hardware.hpp"
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <limits>
+#include <list>
 #include <pluginlib/class_list_macros.hpp>
 #include <sstream>
 #include <stdexcept>
@@ -17,7 +19,7 @@ const std::array<std::string, kJoints> kNames{
 using Callback = hardware_interface::CallbackReturn;
 using Result = hardware_interface::return_type;
 }
-EngineerHardware::~EngineerHardware() { stopWorker(); }
+EngineerHardware::~EngineerHardware() { stopWorkers(); }
 Callback EngineerHardware::on_init(const hardware_interface::HardwareInfo &info)
 {
   if (SystemInterface::on_init(info) != Callback::SUCCESS) return Callback::ERROR;
@@ -86,18 +88,112 @@ void EngineerHardware::validatePositions(const JointValues &values) const
     if (!std::isfinite(values[i]) || values[i] < lower_[i] - 1e-10 || values[i] > upper_[i] + 1e-10)
       throw std::invalid_argument("关节位置无效或超出配置限位: " + kNames[i]);
 }
+std::string EngineerHardware::openAutomaticPort()
+{
+  constexpr size_t required_frames = 3;
+  struct Candidate
+  {
+    std::string path;
+    std::string error;
+    SerialPort port;
+    FeedbackParser parser;
+    size_t valid_frames = 0;
+    Clock::time_point last_valid{};
+  };
+
+  std::list<Candidate> candidates;
+  for (const auto &device : std::filesystem::directory_iterator("/dev"))
+  {
+    const auto name = device.path().filename().string();
+    if ((name.compare(0, 6, "ttyACM") != 0 && name.compare(0, 6, "ttyUSB") != 0) ||
+        name.size() <= 6 || name.find_first_not_of("0123456789", 6) != std::string::npos)
+      continue;
+    auto &candidate = candidates.emplace_back();
+    candidate.path = device.path().string();
+    try { candidate.port.open(candidate.path, baud_, false); }
+    catch (const std::exception &e) { candidate.error = e.what(); }
+  }
+  if (candidates.empty())
+    throw std::runtime_error("串口自动识别：未找到 /dev/ttyACM* 或 /dev/ttyUSB*");
+
+  const auto deadline = Clock::now() + std::chrono::duration<double>(startup_timeout_);
+  const auto max_feedback_gap = std::chrono::duration<double>(receive_timeout_);
+  while (rclcpp::ok() && Clock::now() < deadline)
+  {
+    bool listening = false;
+    for (auto &candidate : candidates)
+    {
+      if (!candidate.error.empty()) continue;
+      try
+      {
+        const auto data = candidate.port.readAvailable();
+        const auto rejected = candidate.parser.rejected();
+        const auto frames = candidate.parser.append(data.data(), data.size());
+        const auto now = Clock::now();
+        if (now - candidate.last_valid > max_feedback_gap || rejected != candidate.parser.rejected())
+          candidate.valid_frames = 0;
+        if (rejected == candidate.parser.rejected() && !frames.empty())
+        {
+          candidate.valid_frames = std::min(required_frames, candidate.valid_frames + frames.size());
+          candidate.last_valid = now;
+        }
+        listening = true;
+      }
+      catch (const std::exception &e)
+      {
+        candidate.error = e.what();
+        candidate.port.close();
+      }
+    }
+    if (!listening) break;
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  }
+  if (!rclcpp::ok()) throw std::runtime_error("串口自动识别已取消");
+
+  Candidate *selected = nullptr;
+  size_t matches = 0;
+  std::ostringstream details;
+  const auto now = Clock::now();
+  for (auto &candidate : candidates)
+  {
+    details << "\n  " << candidate.path << ": ";
+    if (!candidate.error.empty())
+      details << candidate.error;
+    else if (candidate.valid_frames == required_frames && now - candidate.last_valid <= max_feedback_gap)
+    {
+      details << "匹配 27 协议";
+      selected = &candidate;
+      ++matches;
+    }
+    else
+      details << "未收到连续有效的 27 协议反馈帧";
+  }
+  if (matches != 1)
+    throw std::runtime_error("串口自动识别未找到唯一匹配设备" + details.str());
+
+  // 保留已验证的连接，避免按名称重开时设备编号已被复用。
+  port_.swap(selected->port);
+  return selected->path;
+}
 Callback EngineerHardware::on_configure(const rclcpp_lifecycle::State &)
 {
-  stopWorker();
+  stopWorkers();
   try
   {
-    if (!mock_) port_.open(port_name_, baud_);
+    auto device = port_name_;
+    if (!mock_)
+    {
+      if (device == "auto")
+        device = openAutomaticPort();
+      else
+        port_.open(device, baud_);
+    }
     {
       std::lock_guard<std::mutex> lock(mutex_);
       active_ = received_ = faulted_ = require_stop_ = false;
       claimed_ = 0;
       error_.clear(); parser_.clear();
-      rx_frames_ = tx_frames_ = 0;
+      rx_frames_ = tx_frames_ = rejected_frames_ = 0;
       feedback_stamp_ = builtin_interfaces::msg::Time();
       feedback_ = Feedback();
       feedback_.position = initial_;
@@ -115,13 +211,20 @@ Callback EngineerHardware::on_configure(const rclcpp_lifecycle::State &)
       }
     }
     running_ = true;
-    worker_ = std::thread(&EngineerHardware::ioLoop, this);
+    if (!mock_)
+    {
+      receive_worker_ = std::thread(&EngineerHardware::receiveLoop, this);
+      transmit_worker_ = std::thread(&EngineerHardware::transmitLoop, this);
+    }
+    status_worker_ = std::thread(&EngineerHardware::statusLoop, this);
     RCLCPP_INFO(node_->get_logger(), "硬件=%s port=%s baud=%d",
-                mock_ ? "mock" : "serial", port_name_.c_str(), baud_);
+                mock_ ? "mock" : "serial", device.c_str(), baud_);
     return Callback::SUCCESS;
   }
   catch (const std::exception &e)
   {
+    stopWorkers();
+    RCLCPP_ERROR(node_->get_logger(), "%s", e.what());
     std::lock_guard<std::mutex> lock(mutex_);
     failLocked(e.what());
     return Callback::ERROR;
@@ -151,7 +254,7 @@ Callback EngineerHardware::on_deactivate(const rclcpp_lifecycle::State &)
 }
 Callback EngineerHardware::on_cleanup(const rclcpp_lifecycle::State &)
 {
-  stopWorker(); return Callback::SUCCESS;
+  stopWorkers(); return Callback::SUCCESS;
 }
 Callback EngineerHardware::on_error(const rclcpp_lifecycle::State &)
 {
@@ -160,10 +263,16 @@ Callback EngineerHardware::on_error(const rclcpp_lifecycle::State &)
   // 保留监测线程上报故障；不自动重连或恢复旧任务。
   return Callback::SUCCESS;
 }
-void EngineerHardware::stopWorker()
+void EngineerHardware::stopWorkers()
 {
-  running_ = false; wake_.notify_all();
-  if (worker_.joinable()) worker_.join();
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    running_ = false;
+  }
+  wake_.notify_all();
+  if (receive_worker_.joinable()) receive_worker_.join();
+  if (transmit_worker_.joinable()) transmit_worker_.join();
+  if (status_worker_.joinable()) status_worker_.join();
   port_.close();
 }
 std::vector<hardware_interface::StateInterface> EngineerHardware::export_state_interfaces()
@@ -290,13 +399,14 @@ Result EngineerHardware::write(const rclcpp::Time &, const rclcpp::Duration &)
 }
 void EngineerHardware::failLocked(const std::string &why)
 {
-  if (!faulted_) RCLCPP_ERROR(node_ ? node_->get_logger() : rclcpp::get_logger("serial_driver"), "%s", why.c_str());
-  faulted_ = true; require_stop_ = true; error_ = why;
+  if (!faulted_) error_ = why;
+  faulted_ = true; require_stop_ = true;
   wake_.notify_all();
 }
 void EngineerHardware::receiveBytesLocked(const uint8_t *data, size_t size)
 {
   for (const auto &feedback : parser_.append(data, size)) acceptFeedbackLocked(feedback);
+  rejected_frames_ = parser_.rejected();
 }
 void EngineerHardware::acceptFeedbackLocked(const Feedback &f)
 {
@@ -315,7 +425,7 @@ void EngineerHardware::acceptFeedbackLocked(const Feedback &f)
   received_ = true; ++rx_frames_;
   wake_.notify_all();
 }
-void EngineerHardware::publishStatus()
+void EngineerHardware::publishStatus(bool &fault_reported)
 {
   msg::HardwareStatus status;
   {
@@ -328,67 +438,98 @@ void EngineerHardware::publishStatus()
     status.gripper_position = feedback_.grip; status.gripper_state = feedback_.grip_state;
     status.control_epoch = epoch_;
     status.rx_frames = rx_frames_; status.tx_frames = tx_frames_;
-    status.rejected_frames = parser_.rejected(); status.error = error_;
+    status.rejected_frames = rejected_frames_; status.error = error_;
+  }
+  if (status.faulted && !fault_reported)
+  {
+    RCLCPP_ERROR(node_->get_logger(), "%s", status.error.c_str());
+    fault_reported = true;
   }
   status_pub_->publish(status);
   std_msgs::msg::UInt8 mode;
   mode.data = status.feedback_valid ? status.mode : 0;
   mode_pub_->publish(mode);
 }
-void EngineerHardware::ioLoop()
+void EngineerHardware::receiveLoop()
 {
-  rclcpp::executors::SingleThreadedExecutor executor;
-  executor.add_node(node_);
-  auto next_tx = Clock::now(), next_status = next_tx;
-  const auto tx_period = std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(1 / tx_rate_));
-  const auto feedback_period = std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(1 / feedback_rate_));
   try
   {
     while (running_ && rclcpp::ok())
     {
-      executor.spin_some(std::chrono::milliseconds(1));
-      const auto now = Clock::now();
-      if (!mock_)
-      {
-        const auto data = port_.readAvailable();
-        std::lock_guard<std::mutex> lock(mutex_);
-        receiveBytesLocked(data.data(), data.size());
-      }
-      TxFrame frame{};
-      bool send = false;
-      {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (!mock_ && received_ && !faulted_ && !freshLocked()) failLocked("有效反馈超时，禁止输出；需重启硬件链路");
-        if (!mock_ && now >= next_tx)
-        {
-          send = enabledLocked() && target_epoch_ == epoch_;
-          if (send) frame = encodeCommand(target_);
-          next_tx = now + tx_period;
-        }
-      }
-      if (send)
-      {
-        port_.writeFrame(frame.data(), frame.size());
-        std::lock_guard<std::mutex> lock(mutex_);
-        ++tx_frames_;
-      }
-      if (now >= next_status) { publishStatus(); next_status = now + feedback_period; }
-      std::unique_lock<std::mutex> lock(mutex_);
-      wake_.wait_for(lock, std::chrono::milliseconds(2), [this] { return !running_; });
+      // 真实串口由接收线程独占解析器。只在提交反馈与计数时持锁。
+      const auto bytes = port_.readAvailable(5);
+      const auto frames = parser_.append(bytes.data(), bytes.size());
+      std::lock_guard<std::mutex> lock(mutex_);
+      rejected_frames_ = parser_.rejected();
+      for (const auto &feedback : frames) acceptFeedbackLocked(feedback);
+      if (received_ && !faulted_ && !freshLocked())
+        failLocked("有效反馈超时，禁止输出；需重启硬件链路");
     }
   }
   catch (const std::exception &e)
   {
-    { std::lock_guard<std::mutex> lock(mutex_); failLocked(e.what()); }
-    // I/O 故障锁存，不再读写端口，持续发布离线状态。
+    std::lock_guard<std::mutex> lock(mutex_);
+    failLocked(e.what());
+  }
+}
+void EngineerHardware::transmitLoop()
+{
+  const auto period = std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(1 / tx_rate_));
+  try
+  {
     while (running_ && rclcpp::ok())
     {
-      publishStatus();
+      const auto deadline = Clock::now() + period;
+      TxFrame frame{};
+      bool send;
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        send = running_ && enabledLocked() && target_epoch_ == epoch_;
+        if (send) frame = encodeCommand(target_);
+      }
+      if (send)
+      {
+        // 串口写入可能等待缓冲区，不能占用反馈状态锁。
+        port_.writeFrame(frame.data(), frame.size());
+        std::lock_guard<std::mutex> lock(mutex_);
+        ++tx_frames_;
+      }
       std::unique_lock<std::mutex> lock(mutex_);
-      wake_.wait_for(lock, std::chrono::milliseconds(20), [this] { return !running_; });
+      wake_.wait_until(lock, deadline, [this] { return !running_; });
     }
   }
-  executor.remove_node(node_);
+  catch (const std::exception &e)
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    failLocked(e.what());
+  }
+}
+void EngineerHardware::statusLoop()
+{
+  const auto period = std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(1 / feedback_rate_));
+  bool fault_reported = false;
+  try
+  {
+    rclcpp::executors::SingleThreadedExecutor executor;
+    executor.add_node(node_);
+    while (running_ && rclcpp::ok())
+    {
+      const auto deadline = Clock::now() + period;
+      executor.spin_some(std::chrono::milliseconds(1));
+      publishStatus(fault_reported);
+      std::unique_lock<std::mutex> lock(mutex_);
+      wake_.wait_until(lock, deadline, [this] { return !running_; });
+    }
+    executor.remove_node(node_);
+  }
+  catch (const std::exception &e)
+  {
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      failLocked(e.what());
+    }
+    RCLCPP_ERROR(node_->get_logger(), "硬件状态线程异常: %s", e.what());
+  }
 }
 } // namespace serial_driver
 PLUGINLIB_EXPORT_CLASS(serial_driver::EngineerHardware, hardware_interface::SystemInterface)

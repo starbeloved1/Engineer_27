@@ -48,7 +48,9 @@ private:
   void publishStatus();
   void updateJoints(sensor_msgs::msg::JointState::ConstSharedPtr message);
   void previewTarget();
-  void prepareExecution(const moveit::task_constructor::SolutionBase &solution);
+  void prepareExecution(moveit::task_constructor::Task &task,
+                        const moveit::task_constructor::SolutionBase &solution,
+                        size_t first_stage, size_t end_stage);
   void startExecution(bool next, Trigger::Response &response);
   void runExecution();
   void cancel(Trigger::Response &response);
@@ -73,6 +75,7 @@ private:
   double hardware_timeout_ = .1;
   std::chrono::steady_clock::time_point hardware_received_{};
   std::unique_ptr<moveit::task_constructor::Task> task_;
+  std::unique_ptr<moveit::task_constructor::Task> pick_tail_task_;
   std::array<moveit_task_constructor_msgs::msg::Solution, 6> stage_solutions_;
   size_t next_stage_ = 0, end_stage_ = 3;
   moveit_msgs::msg::AllowedCollisionMatrix baseline_acm_;
