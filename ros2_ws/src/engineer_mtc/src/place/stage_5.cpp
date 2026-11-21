@@ -4,25 +4,26 @@
 namespace engineer_mtc
 {
 std::unique_ptr<mtc::SerialContainer> createStage5(const MotionStages &motion, mtc::Stage &start,
-    const Eigen::Isometry3d &storage_tip, const ContactPairs &slot, const ContactPairs &gripper)
+    const Eigen::Isometry3d &storage_tip, const ContactPairs &carried,
+    const ContactPairs &tool_slot, const ContactPairs &gripper)
 {
   const auto &settings = motion.settings;
   auto stage = std::make_unique<mtc::SerialContainer>("stage_5: store and retreat");
-  if (!settings.storage_contact_objects.empty())
-    stage->insert(startContact("allow slot contact", slot));
   stage->insert(relativeMove(motion, "lower to storage", settings.storage_axis,
                              settings.storage_distance, true));
-  stage->insert(contactIK(motion, start, "storage IK", storage_tip, slot));
+  stage->insert(contactIK(motion, start, "storage IK", storage_tip));
   stage->insert(gripperMove(motion, false));
 
   auto detach = std::make_unique<mtc::stages::ModifyPlanningScene>("detach energy");
   detach->restrictDirection(mtc::PropagatingEitherWay::FORWARD);
   detach->detachObject(settings.object_id, settings.tip);
-  detach->setCallback([gripper, slot](const planning_scene::PlanningScenePtr &scene,
-                                      const mtc::PropertyMap &)
+  detach->setCallback([gripper, carried, id = settings.object_id](
+                          const planning_scene::PlanningScenePtr &scene, const mtc::PropertyMap &)
   {
     auto &matrix = scene->getAllowedCollisionMatrixNonConst();
-    slot.restore(matrix);
+    carried.restore(matrix);
+    // 放下的矿仍与车体接触，退爪时只保留必要的接触对。
+    matrix.setEntry(id, scene->getRobotModel()->getRootLinkName(), true);
     gripper.allow(matrix);
   });
   stage->insert(std::move(detach));
@@ -32,10 +33,12 @@ std::unique_ptr<mtc::SerialContainer> createStage5(const MotionStages &motion, m
 
   auto store = std::make_unique<mtc::stages::ModifyPlanningScene>("restore release contact");
   store->restrictDirection(mtc::PropagatingEitherWay::FORWARD);
-  store->setCallback([gripper, id = settings.object_id](const planning_scene::PlanningScenePtr &scene,
+  store->setCallback([carried, tool_slot, id = settings.object_id](const planning_scene::PlanningScenePtr &scene,
                                                        const mtc::PropertyMap &)
   {
-    gripper.restore(scene->getAllowedCollisionMatrixNonConst());
+    auto &matrix = scene->getAllowedCollisionMatrixNonConst();
+    carried.restore(matrix);
+    tool_slot.restore(matrix);
     moveit_msgs::msg::CollisionObject stored;
     if (!scene->getCollisionObjectMsg(stored, id))
       throw std::runtime_error("退爪后场景缺少已经放置的矿");
@@ -48,6 +51,7 @@ std::unique_ptr<mtc::SerialContainer> createStage5(const MotionStages &motion, m
     remove.operation = moveit_msgs::msg::CollisionObject::REMOVE;
     if (!scene->processCollisionObjectMsg(remove) || !scene->processCollisionObjectMsg(stored))
       throw std::runtime_error("无法保留槽内矿碰撞体");
+    matrix.setEntry(stored.id, scene->getRobotModel()->getRootLinkName(), true);
   });
   stage->insert(std::move(store));
   return stage;

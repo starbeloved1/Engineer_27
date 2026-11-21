@@ -5,6 +5,7 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/task_constructor/introspection.h>
+#include <moveit/task_constructor/storage.h>
 #include <sstream>
 #include <tf2_eigen/tf2_eigen.hpp>
 
@@ -33,7 +34,7 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   settings_.acceleration_scale = parameter(*this, "acceleration_scaling", 0.2);
   settings_.cartesian_step = parameter(*this, "cartesian_step", 0.005);
   settings_.distance = parameter(*this, "pregrasp_distance", 0.07);
-  const int max_ik = parameter(*this, "max_ik_solutions", 8);
+  const int max_ik = parameter(*this, "max_ik_solutions", 10);
   if (max_ik < 1 || max_ik > 64)
     throw std::invalid_argument("max_ik_solutions 须在 1 到 64 之间");
   settings_.max_ik_solutions = max_ik;
@@ -56,10 +57,10 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
       parameter(*this, "object_to_tcp_xyz",
                 std::vector<double>{-.000734251986318, -.001468988580768, .004329394048142}),
       parameter(*this, "object_to_tcp_rpy",
-                std::vector<double>{-3.139041892858582, -.000000107428275, -.000003732645167}));
+                std::vector<double>{.002550760731211, -.000000107428275, -.000003732645167}));
   settings_.tip_to_tcp = xyzRpyTransform(parameter(*this, "tip_to_tcp_xyz", zero),
                                          parameter(*this, "tip_to_tcp_rpy", zero));
-  parameter(*this, "storage_xyz", std::vector<double>{-.277770966183247, .186945142397677, .19});
+  parameter(*this, "storage_xyz", std::vector<double>{-.277770576390778, .230947485257963, .19});
   parameter(*this, "storage_rpy", std::vector<double>{3.141592653589793, 0., 2.09439510});
   auto axis = [this](const char *key, const std::vector<double> &fallback)
   {
@@ -422,9 +423,11 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       return;
     }
   }
-  if (place && (!extracted_ || !gripperAt(true)))
+  // 串口联调期间暂停存矿入口的夹爪闭合确认。
+  // if (place && (!extracted_ || !gripperAt(true)))
+  if (place && !extracted_)
   {
-    response.message = "存车需要已完成拔离并确认闭爪的矿";
+    response.message = "存车需要已完成拔离的矿";
     return;
   }
   plan_valid_ = false;
@@ -484,11 +487,10 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       }
       publishTargets(targets, target.header.stamp);
       publishPreview(targets.pregrasp_tip_base * settings_.tip_to_tcp, targets.grasp_tcp_base, false);
-      baseline_acm_ = energy_->collisionMatrix();
-      task_ = createPickTask(shared_from_this(), settings_, targets, CollisionMatrix(baseline_acm_));
+      task_ = createPickTask(shared_from_this(), settings_, targets);
     }
     task_->init();
-    if (!task_->plan(1) || task_->solutions().empty())
+    if (!task_->plan(8) || task_->solutions().empty())
     {
       if (const auto *ik = task_->findChild("stage_2: grasp and attach/grasp IK"))
         for (const auto &candidate : ik->solutions())
@@ -509,11 +511,33 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
     std::lock_guard<std::mutex> commit(command_mutex_);
     if (cancel_requested_)
       throw std::runtime_error("规划已取消");
-    const auto &solution = *task_->solutions().front();
-    task_->introspection().publishSolution(solution);
-    prepareExecution();
     moveit_task_constructor_msgs::msg::Solution serialized;
-    solution.toMsg(serialized, &task_->introspection());
+    moveit::task_constructor::SolutionBaseConstPtr selected;
+    std::string rejected;
+    // MTC 按代价升序排列解，从中选第一个符合串口关节范围的完整解。
+    for (const auto &candidate : task_->solutions())
+    {
+      moveit_task_constructor_msgs::msg::Solution candidate_message;
+      candidate->toMsg(candidate_message, &task_->introspection());
+      try
+      {
+        checkTrajectoryLimits(candidate_message);
+      }
+      catch (const std::runtime_error &error)
+      {
+        rejected = error.what();
+        continue;
+      }
+      serialized = std::move(candidate_message);
+      selected = candidate;
+      break;
+    }
+    if (!selected)
+      throw std::runtime_error(task_name + "候选解均不可执行：" + rejected);
+    RCLCPP_INFO(get_logger(), "%s：找到 %zu 个完整解，选中代价 %.3f",
+                task_name.c_str(), task_->solutions().size(), selected->cost());
+    prepareExecution(*selected);
+    task_->introspection().publishSolution(*selected);
     moveit_msgs::msg::DisplayTrajectory display;
     display.model_id = task_->getRobotModel()->getName();
     display.trajectory_start = serialized.start_scene.robot_state;

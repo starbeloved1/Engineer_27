@@ -7,13 +7,11 @@ namespace engineer_mtc
 {
 namespace
 {
-// ComputeIK and the backward Cartesian segment need the contact scene.
-// Their upstream connection sees the baseline again at the contact boundary.
+// ComputeIK and the backward Cartesian segment inherit the monitored scene.
 class ContactPose : public mtc::stages::GeneratePose
 {
 public:
-  explicit ContactPose(const ContactPairs &contacts)
-    : mtc::stages::GeneratePose("contact pose"), contacts_(contacts)
+  ContactPose() : mtc::stages::GeneratePose("contact pose")
   {
   }
 
@@ -29,17 +27,26 @@ public:
       spawn(mtc::InterfaceState(scene), std::move(failure));
       return;
     }
-    contacts_.allow(scene->getAllowedCollisionMatrixNonConst());
     mtc::InterfaceState state(scene);
     forwardProperties(*upstream->end(), state);
     state.properties().set("target_pose", target);
     spawn(std::move(state), 0.0);
   }
-
-private:
-  ContactPairs contacts_;
 };
 } // namespace
+
+void relaxPickCollisions(CollisionMatrix &matrix, const std::vector<std::string> &links,
+                         const std::vector<std::string> &objects)
+{
+  for (size_t i = 0; i < links.size(); ++i)
+  {
+    matrix.setDefaultEntry(links[i], true);
+    for (size_t j = i + 1; j < links.size(); ++j)
+      matrix.setEntry(links[i], links[j], true);
+    for (const auto &object : objects)
+      matrix.setEntry(links[i], object, true);
+  }
+}
 
 ContactPairs::ContactPairs(const CollisionMatrix &baseline, std::string object,
                            std::vector<std::string> others)
@@ -75,6 +82,13 @@ void ContactPairs::restore(CollisionMatrix &matrix) const
     else
       matrix.setEntry(object_, entry.other, entry.type == collision_detection::AllowedCollision::ALWAYS);
   }
+}
+
+ContactPairs carriedPlaceContacts(const CollisionMatrix &baseline, const TaskSettings &settings,
+                                  std::vector<std::string> links)
+{
+  links.insert(links.end(), settings.storage_contact_objects.begin(), settings.storage_contact_objects.end());
+  return ContactPairs(baseline, settings.object_id, std::move(links));
 }
 
 MotionStages::MotionStages(const rclcpp::Node::SharedPtr &node, const TaskSettings &config)
@@ -176,9 +190,9 @@ std::unique_ptr<mtc::stages::MoveRelative> relativeMove(const MotionStages &moti
 
 std::unique_ptr<mtc::stages::ComputeIK> contactIK(
     const MotionStages &motion, mtc::Stage &monitor, const std::string &name,
-    const Eigen::Isometry3d &goal, const ContactPairs &contacts)
+    const Eigen::Isometry3d &goal)
 {
-  auto pose = std::make_unique<ContactPose>(contacts);
+  auto pose = std::make_unique<ContactPose>();
   pose->setMonitoredStage(&monitor);
   geometry_msgs::msg::PoseStamped target;
   target.header.frame_id = motion.settings.base_frame;
@@ -192,20 +206,6 @@ std::unique_ptr<mtc::stages::ComputeIK> contactIK(
   ik->setTimeout(std::min(1., motion.settings.planning_time * .2));
   ik->properties().configureInitFrom(mtc::Stage::INTERFACE, {"target_pose"});
   return ik;
-}
-
-std::unique_ptr<mtc::stages::ModifyPlanningScene> startContact(
-    const std::string &name, const ContactPairs &contacts)
-{
-  auto stage = std::make_unique<mtc::stages::ModifyPlanningScene>(name);
-  // The approach is solved backward. Return to the baseline before
-  // connecting the free-space motion, while execution enters contact here.
-  stage->restrictDirection(mtc::PropagatingEitherWay::BACKWARD);
-  stage->setCallback([contacts](const planning_scene::PlanningScenePtr &scene, const mtc::PropertyMap &)
-  {
-    contacts.restore(scene->getAllowedCollisionMatrixNonConst());
-  });
-  return stage;
 }
 
 std::string storedObjectId(const std::string &active_id)

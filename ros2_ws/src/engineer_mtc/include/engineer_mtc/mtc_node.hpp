@@ -48,11 +48,12 @@ private:
   void publishStatus();
   void updateJoints(sensor_msgs::msg::JointState::ConstSharedPtr message);
   void previewTarget();
-  void prepareExecution();
+  void prepareExecution(const moveit::task_constructor::SolutionBase &solution);
   void startExecution(bool next, Trigger::Response &response);
   void runExecution();
   void cancel(Trigger::Response &response);
   void checkStart(const moveit_task_constructor_msgs::msg::Solution &solution);
+  static void checkTrajectoryLimits(const moveit_task_constructor_msgs::msg::Solution &solution);
   bool gripperAt(bool closed);
   void checkHardware();
   void updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr message);

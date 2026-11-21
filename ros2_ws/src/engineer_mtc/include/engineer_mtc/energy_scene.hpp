@@ -4,8 +4,11 @@
 #include <moveit_msgs/msg/collision_object.hpp>
 #include <moveit_msgs/srv/get_planning_scene.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <functional>
+#include <initializer_list>
 #include <string>
 #include <mutex>
+#include <vector>
 
 namespace engineer_mtc
 {
@@ -22,10 +25,14 @@ public:
   Eigen::Isometry3d attachedPose(const std::string &tip);
   void checkStorage(const std::string &stored_id, const std::vector<std::string> &contact_objects);
   moveit_msgs::msg::AllowedCollisionMatrix collisionMatrix();
-  void restoreContacts(const ContactPairs &gripper, const ContactPairs &slot);
+  void allowPickCollisions(const std::vector<std::string> &links,
+                           const moveit_msgs::msg::AllowedCollisionMatrix &baseline);
+  void setCollisionMatrix(const moveit_msgs::msg::AllowedCollisionMatrix &matrix);
+  void setContacts(std::initializer_list<std::reference_wrapper<const ContactPairs>> contacts, bool allow);
 
 private:
   moveit_msgs::msg::AllowedCollisionMatrix readCollisionMatrix();
+  void applyCollisionMatrix(const moveit_msgs::msg::AllowedCollisionMatrix &matrix);
   rclcpp::Node::SharedPtr service_node_;
   rclcpp::Client<moveit_msgs::srv::GetPlanningScene>::SharedPtr scene_client_;
   moveit_msgs::msg::CollisionObject model_;

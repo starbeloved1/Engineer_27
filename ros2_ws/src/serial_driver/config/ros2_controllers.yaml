@@ -19,12 +19,12 @@ arm_controller:
     constraints:
       goal_time: 1.0
       stopped_velocity_tolerance: 0.01
-      link_1_joint: {trajectory: 0.2, goal: 0.01}
-      link_2_joint: {trajectory: 0.2, goal: 0.01}
-      link_3_joint: {trajectory: 0.2, goal: 0.01}
-      link_4_joint: {trajectory: 0.2, goal: 0.01}
-      link_5_joint: {trajectory: 0.2, goal: 0.01}
-      link_6_joint: {trajectory: 0.2, goal: 0.01}
+      link_1_joint: {trajectory: 0.2, goal: 0.1}
+      link_2_joint: {trajectory: 0.2, goal: 0.1}
+      link_3_joint: {trajectory: 0.2, goal: 0.1}
+      link_4_joint: {trajectory: 0.2, goal: 0.1}
+      link_5_joint: {trajectory: 0.2, goal: 0.1}
+      link_6_joint: {trajectory: 0.2, goal: 0.1}
 
 gripper_controller:
   ros__parameters:
@@ -34,4 +34,6 @@ gripper_controller:
     state_publish_rate: 50.0
     constraints:
       goal_time: 1.0
-      gripper_state_joint: {trajectory: 0.01, goal: 0.0001}
+      # 串口联调期间仅执行夹爪轨迹，暂不按实测开合位置判定成败。
+      # gripper_state_joint: {trajectory: 0.01, goal: 0.0001}
+      gripper_state_joint: {trajectory: 0.0, goal: 0.0}

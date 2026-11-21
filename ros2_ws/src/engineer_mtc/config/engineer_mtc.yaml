@@ -7,7 +7,7 @@ engineer_mtc:
     target_average_max_age: 5.0 # 平均窗口历史样本最大年龄，秒；适配低帧率静止取样
     max_target_age: 1.5 # 最新视觉观测有效期，秒
     max_joint_age: 1.0 # s
-    hardware_status_timeout: 0.1 # s，执行须有新鲜硬件状态且 mode=2
+    hardware_status_timeout: 0.2 # s，执行须有新鲜硬件状态且 mode=2
 
     base_frame: base_link
     planning_group: arm_control
@@ -15,19 +15,18 @@ engineer_mtc:
     planning_pipeline: ompl
     planner_id: RRTConnectkConfigDefault
     planning_time: 5.0 # s，规划预算
-    max_ik_solutions: 8 # 候选解数量
+    max_ik_solutions: 10 # 每个目标的 IK 候选解上限
     velocity_scaling: 0.2
-    acceleration_scaling: 0.2
+    acceleration_scaling: 0.7
 
-    # 抓取点相对 PLY 原点的位姿
-    # 当前参数含义为 URDF energy_link -> TCP；已换算以保持原抓取位置和朝向。
+    # URDF energy_link -> TCP。TCP 局部 X 保持接近方向，TCP +Z 对齐矿 PLY -Z。
     object_to_tcp_xyz: [-0.000734251986318, -0.001468988580768, 0.004329394048142] # m
-    object_to_tcp_rpy: [-3.139041892858582, -0.000000107428275, -0.000003732645167] # rad
+    object_to_tcp_rpy: [0.002550760731211, -0.000000107428275, -0.000003732645167] # rad
     # TCP 相对 link_6 的位姿
     tip_to_tcp_xyz: [0.12, 0.0, 0.0] # TCP 沿 link_6 正 X 偏移 12 cm
     tip_to_tcp_rpy: [0.0, 0.0, 0.0]
     approach_axis: [1.0, 0.0, 0.0] # 预抓取接近方向
-    pregrasp_distance: 0.07 # m
+    pregrasp_distance: 0.12 # m
     include_approach: true # 写 true 即可
     cartesian_step: 0.005 # m，直线插值步长
 
@@ -36,8 +35,6 @@ engineer_mtc:
     gripper_group: gripper
     object_id: energy
     touch_links: [link_6] # 夹取和带矿时允许接触目标矿的 link
-    # T_PLY_energy：离线模型之间的变换
-    # 此变换已移至 icp_registration 的 ply_to_energy 参数，MTC 不再应用。
     # 拉取轴在 URDF 中约为 -Z（朝大头），由原 PLY +Z 精确转换而来。
     extraction_axis: [0.000000116949, 0.002550757964758, -0.999996746811604]
     extraction_distance: 0.10 # m
@@ -45,8 +42,7 @@ engineer_mtc:
     # storage_contact_objects: [slot_contact_surface] # 启用前确认 ID 已在场景中
     storage_distance: 0.10 # 沿入槽方向直线移动的距离，m
     retreat_distance: 0.07 # 松爪后沿TCP接近方向的反向退出
-    # 借用 26 左存矿位的 X/Y 与朝向，Z 抬高到 0.19 m 用于 27 模拟测试。
-    # 27 仍按夹持关系换算 link_6 目标；此处不是 26 的夹爪末端目标，也未标定到 27 实物。
-    storage_xyz: [-0.277770966183247, 0.186945142397677, 0.19]
+    # 目标为矿块原点，link_6 位姿按夹持关系换算。
+    storage_xyz: [-0.277770576390778, 0.230947485257963, 0.19]
     # URDF +Z 指向小头；绕 X 翻转使小头朝下。
     storage_rpy: [3.141592653589793, 0.0, 2.09439510]

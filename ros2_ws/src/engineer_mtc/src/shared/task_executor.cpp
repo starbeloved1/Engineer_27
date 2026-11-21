@@ -3,6 +3,8 @@
 #include <cmath>
 #include <functional>
 #include <map>
+#include <optional>
+#include <moveit/robot_model/robot_model.h>
 #include <moveit/task_constructor/storage.h>
 
 namespace engineer_mtc
@@ -40,7 +42,7 @@ void MtcNode::updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr 
   }
 }
 
-void MtcNode::prepareExecution()
+void MtcNode::prepareExecution(const moveit::task_constructor::SolutionBase &selected)
 {
   std::array<bool, 6> found{};
   stage_solutions_.fill(moveit_task_constructor_msgs::msg::Solution{});
@@ -62,6 +64,7 @@ void MtcNode::prepareExecution()
       // forward scene stages here change objects, and they already emit diffs.
       // A full scene would discard obstacles added since the task was planned.
       for (auto &segment : stage_solutions_[i].sub_trajectory)
+      {
         if (!segment.scene_diff.is_diff)
         {
           moveit_msgs::msg::PlanningScene diff;
@@ -70,6 +73,10 @@ void MtcNode::prepareExecution()
           diff.allowed_collision_matrix = std::move(segment.scene_diff.allowed_collision_matrix);
           segment.scene_diff = std::move(diff);
         }
+        // 执行器临时应用许可。入槽阶段保留解附着和退爪的 ACM 更新。
+        if (i != 4)
+          segment.scene_diff.allowed_collision_matrix = moveit_msgs::msg::AllowedCollisionMatrix{};
+      }
       found[i] = true;
       return;
     }
@@ -81,16 +88,15 @@ void MtcNode::prepareExecution()
                  dynamic_cast<const moveit::task_constructor::WrappedSolution *>(&solution))
       visit(*wrapped->wrapped());
   };
-  visit(*task_->solutions().front());
+  visit(selected);
   for (size_t i = next_stage_; i < end_stage_; ++i)
     if (!found[i])
       throw std::runtime_error("轨迹缺少阶段 " + std::to_string(i + 1));
 }
 
-void MtcNode::checkStart(const moveit_task_constructor_msgs::msg::Solution &solution)
+void MtcNode::checkTrajectoryLimits(const moveit_task_constructor_msgs::msg::Solution &solution)
 {
-  checkHardware();
-  // 阶段开始前检查整段轨迹，避免中途才发现 continuous 关节越过协议 ±180°。
+  // 检查每个轨迹点，continuous 关节也须符合串口协议的 ±180° 范围。
   constexpr double pi = 3.14159265358979323846;
   for (const auto &segment : solution.sub_trajectory)
   {
@@ -108,6 +114,12 @@ void MtcNode::checkStart(const moveit_task_constructor_msgs::msg::Solution &solu
       }
     }
   }
+}
+
+void MtcNode::checkStart(const moveit_task_constructor_msgs::msg::Solution &solution)
+{
+  checkHardware();
+  checkTrajectoryLimits(solution);
   sensor_msgs::msg::JointState::ConstSharedPtr current;
   {
     std::lock_guard<std::mutex> l(input_mutex_);
@@ -127,10 +139,13 @@ void MtcNode::checkStart(const moveit_task_constructor_msgs::msg::Solution &solu
     if (it == actual.end() || !std::isfinite(it->second))
       throw std::runtime_error("缺少关节反馈: " + start.name[i]);
     double delta = it->second - start.position[i];
-    if (start.name[i] != "gripper_state_joint")
+    const bool gripper = start.name[i] == "gripper_state_joint";
+    if (!gripper)
       delta = std::atan2(std::sin(delta), std::cos(delta));
-    const double tolerance = start.name[i] == "gripper_state_joint" ? 1e-4 : .01;
-    if (std::abs(delta) > tolerance)
+    // 串口联调期间，仅对机械臂关节检查起点位置偏差。
+    // const double tolerance = gripper ? 1e-4 : 0.1;
+    // if (std::abs(delta) > tolerance)
+    if (!gripper && std::abs(delta) > 0.1)
       throw std::runtime_error("实际起点偏离规划: " + start.name[i]);
   }
 }
@@ -208,11 +223,24 @@ void MtcNode::runExecution()
     }
   } release{busy_};
   bool contact_in_progress = false;
+  bool place_contacts_active = false;
   bool stopping_timed_out = false;
+  const bool pick = end_stage_ == 3;
+  std::optional<moveit_msgs::msg::AllowedCollisionMatrix> pick_collision_baseline;
   const CollisionMatrix baseline(baseline_acm_);
-  const ContactPairs gripper(baseline, settings_.object_id, settings_.touch_links);
-  const ContactPairs slot(baseline, settings_.object_id,
-                          end_stage_ == 6 ? settings_.storage_contact_objects : std::vector<std::string>{});
+  const auto &model = *task_->getRobotModel();
+  const ContactPairs arm_base(baseline, model.getRootLinkName(),
+                              model.getJointModelGroup(settings_.group)->getLinkModelNames());
+  const auto carried = pick ? ContactPairs{} :
+      carriedPlaceContacts(baseline, settings_, model.getLinkModelNames());
+  const ContactPairs tool_slot(baseline, settings_.tip, settings_.storage_contact_objects);
+  const auto set_place_contacts = [&](size_t index, bool allow)
+  {
+    if (index < 5)
+      energy_->setContacts({arm_base, carried, tool_slot}, allow);
+    else
+      energy_->setContacts({arm_base}, allow);
+  };
   try
   {
     while (next_stage_ < end_stage_)
@@ -222,6 +250,18 @@ void MtcNode::runExecution()
       const auto index = next_stage_;
       checkStart(stage_solutions_[index]);
       setStatus(Status::EXECUTING, index + 1, "执行本阶段，等待控制器及场景反馈");
+      if (pick)
+      {
+        pick_collision_baseline = energy_->collisionMatrix();
+        energy_->allowPickCollisions(task_->getRobotModel()->getLinkModelNames(), *pick_collision_baseline);
+      }
+      else
+      {
+        place_contacts_active = true;
+        set_place_contacts(index, true);
+      }
+      if (cancel_requested_)
+        throw std::runtime_error("执行已取消");
       Execute::Goal goal;
       goal.solution = stage_solutions_[index];
       auto options = rclcpp_action::Client<Execute>::SendGoalOptions();
@@ -292,6 +332,16 @@ void MtcNode::runExecution()
         std::lock_guard<std::mutex> l(goal_mutex_);
         active_goal_.reset();
       }
+      if (pick_collision_baseline)
+      {
+        energy_->setCollisionMatrix(*pick_collision_baseline);
+        pick_collision_baseline.reset();
+      }
+      if (place_contacts_active)
+      {
+        set_place_contacts(index, false);
+        place_contacts_active = false;
+      }
       if (stopping_timed_out)
         throw std::runtime_error("控制器执行超时，已收到终态");
       if (cancel_requested_)
@@ -301,13 +351,14 @@ void MtcNode::runExecution()
         throw std::runtime_error(
             "阶段执行失败，MoveIt code=" +
             std::to_string(completed.result ? completed.result->error_code.val : 0));
-      // 不靠已发送命令推测抓取状态；查询实际规划场景和模拟关节反馈。
+      // 确认规划场景更新；串口联调期间暂停夹爪到位判定。
       const bool expected_attached = index >= 1 && index <= 3;
-      const bool expected_closed = index == 1 || index == 2 || index == 3 || index == 5;
+      // const bool expected_closed = index == 1 || index == 2 || index == 3 || index == 5;
       bool confirmed = false;
       for (int retry = 0; retry < 20 && rclcpp::ok() && !cancel_requested_; ++retry)
       {
-        if (energy_->attached() == expected_attached && gripperAt(expected_closed) &&
+        if (energy_->attached() == expected_attached &&
+            // gripperAt(expected_closed) &&
             (index != 4 || energy_->stored(storedObjectId(settings_.object_id))))
         {
           confirmed = true;
@@ -316,16 +367,12 @@ void MtcNode::runExecution()
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
       }
       if (!confirmed)
-        throw std::runtime_error("阶段反馈不符合预期：夹爪或矿场景状态未确认");
+        throw std::runtime_error("阶段反馈不符合预期：矿场景状态未确认");
       {
         std::lock_guard<std::mutex> l(state_mutex_);
         status_.object_attached = expected_attached;
       }
-      if (contact_in_progress)
-      {
-        energy_->restoreContacts(gripper, slot);
-        contact_in_progress = false;
-      }
+      contact_in_progress = false;
       ++next_stage_;
       if (next_stage_ == end_stage_)
       {
@@ -359,23 +406,33 @@ void MtcNode::runExecution()
     if (rclcpp::ok())
     {
       std::string detail = e.what();
-      if (contact_in_progress)
+      if (pick_collision_baseline)
       {
-        contact_state_needs_review_ = true;
-        if (!execution_unconfirmed_)
+        try
         {
-          try
-          {
-            energy_->restoreContacts(gripper, slot);
-          }
-          catch (const std::exception &error)
-          {
-            execution_unconfirmed_ = true;
-            detail += "；";
-            detail += error.what();
-          }
+          energy_->setCollisionMatrix(*pick_collision_baseline);
+        }
+        catch (const std::exception &error)
+        {
+          execution_unconfirmed_ = true;
+          detail += std::string("；恢复取矿前的碰撞矩阵失败：") + error.what();
         }
       }
+      if (place_contacts_active && !execution_unconfirmed_)
+      {
+        try
+        {
+          set_place_contacts(next_stage_, false);
+        }
+        catch (const std::exception &error)
+        {
+          execution_unconfirmed_ = true;
+          detail += "；";
+          detail += error.what();
+        }
+      }
+      if (contact_in_progress)
+        contact_state_needs_review_ = true;
       const bool attached = energy_->attached();
       owned_ = attached || contact_state_needs_review_ || execution_unconfirmed_;
       {

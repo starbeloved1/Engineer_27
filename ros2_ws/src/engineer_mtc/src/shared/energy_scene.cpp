@@ -129,21 +129,51 @@ moveit_msgs::msg::AllowedCollisionMatrix EnergyScene::collisionMatrix()
   return readCollisionMatrix();
 }
 
-void EnergyScene::restoreContacts(const ContactPairs &gripper, const ContactPairs &slot)
+void EnergyScene::setContacts(std::initializer_list<std::reference_wrapper<const ContactPairs>> contacts,
+                              bool allow)
 {
   std::lock_guard<std::mutex> lock(mutex_);
   const auto current = readCollisionMatrix();
   CollisionMatrix matrix(current);
-  gripper.restore(matrix);
-  slot.restore(matrix);
+  for (const ContactPairs &pairs : contacts)
+    if (allow)
+      pairs.allow(matrix);
+    else
+      pairs.restore(matrix);
+  moveit_msgs::msg::AllowedCollisionMatrix updated;
+  matrix.getMessage(updated);
+  if (updated != current)
+    applyCollisionMatrix(updated);
+}
+
+void EnergyScene::allowPickCollisions(const std::vector<std::string> &links,
+                                     const moveit_msgs::msg::AllowedCollisionMatrix &baseline)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto objects = scene_.getKnownObjectNames();
+  // 拔离时矿已附着，不再出现在世界物体列表中。
+  objects.push_back(model_.id);
+  CollisionMatrix matrix(baseline);
+  relaxPickCollisions(matrix, links, objects);
+  moveit_msgs::msg::AllowedCollisionMatrix relaxed;
+  matrix.getMessage(relaxed);
+  applyCollisionMatrix(relaxed);
+}
+
+void EnergyScene::setCollisionMatrix(const moveit_msgs::msg::AllowedCollisionMatrix &matrix)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  applyCollisionMatrix(matrix);
+}
+
+void EnergyScene::applyCollisionMatrix(const moveit_msgs::msg::AllowedCollisionMatrix &matrix)
+{
   moveit_msgs::msg::PlanningScene diff;
-  matrix.getMessage(diff.allowed_collision_matrix);
-  if (diff.allowed_collision_matrix == current)
-    return;
+  diff.allowed_collision_matrix = matrix;
   diff.is_diff = true;
   diff.robot_state.is_diff = true;
   if (!scene_.applyPlanningScene(diff))
-    throw std::runtime_error("无法恢复临时碰撞许可");
+    throw std::runtime_error("无法更新规划场景碰撞矩阵");
 }
 
 } // namespace engineer_mtc

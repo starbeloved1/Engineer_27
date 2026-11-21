@@ -13,6 +13,7 @@ using CollisionMatrix = collision_detection::AllowedCollisionMatrix;
 class ContactPairs
 {
 public:
+  ContactPairs() = default;
   ContactPairs(const CollisionMatrix &baseline, std::string object, std::vector<std::string> others);
   void allow(CollisionMatrix &matrix) const;
   void restore(CollisionMatrix &matrix) const;
@@ -28,6 +29,11 @@ private:
   std::string object_;
   std::vector<Entry> entries_;
 };
+
+void relaxPickCollisions(CollisionMatrix &matrix, const std::vector<std::string> &links,
+                         const std::vector<std::string> &objects);
+ContactPairs carriedPlaceContacts(const CollisionMatrix &baseline, const TaskSettings &settings,
+                                  std::vector<std::string> links);
 
 struct MotionStages
 {
@@ -48,9 +54,6 @@ std::unique_ptr<mtc::stages::MoveRelative> relativeMove(const MotionStages &, co
                                                         bool backward = false);
 std::unique_ptr<mtc::stages::ComputeIK> contactIK(
     const MotionStages &, mtc::Stage &monitor, const std::string &name,
-    const Eigen::Isometry3d &goal, const ContactPairs &);
-std::unique_ptr<mtc::stages::ModifyPlanningScene> startContact(
-    const std::string &name, const ContactPairs &);
-
+    const Eigen::Isometry3d &goal);
 std::string storedObjectId(const std::string &active_id);
 } // namespace engineer_mtc

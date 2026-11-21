@@ -25,8 +25,7 @@ struct TaskSettings
 
 std::unique_ptr<moveit::task_constructor::Task>
 createPickTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
-                   const GraspTargets &targets,
-               const collision_detection::AllowedCollisionMatrix &baseline);
+               const GraspTargets &targets);
 std::unique_ptr<moveit::task_constructor::Task>
 createPlaceTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
                 const Eigen::Isometry3d &storage_tip,
