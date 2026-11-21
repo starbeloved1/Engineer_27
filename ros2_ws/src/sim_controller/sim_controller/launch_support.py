@@ -19,7 +19,7 @@ def rviz_environment(native=False, mtc_details=False):
         libraries.append(Path(get_package_prefix('moveit_task_constructor_visualization'))
                          / 'lib/libmotion_planning_tasks_rviz_plugin.so')
     values = [os.environ.get('LD_PRELOAD', ''), *(str(path) for path in libraries)]
-    return {'LD_PRELOAD': ':'.join(value for value in values if value), 'ROS_DOMAIN_ID': '6'}
+    return {'LD_PRELOAD': ':'.join(value for value in values if value)}
 
 
 def rviz_node(native=False, mtc_details=False):

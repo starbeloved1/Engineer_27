@@ -4,7 +4,8 @@ set -eo pipefail
 engineer_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
   echo '用法：./run_rviz.sh [ROS launch 参数]'
-  echo '仅启动完整 MTC RViz；ROS_DOMAIN_ID=6，允许跨机器 ROS 通信。'
+  echo '仅启动 MTC RViz，显示取矿／存车阶段、当前 TCP 目标和槽内矿。'
+  echo 'ROS_DOMAIN_ID=6，允许跨机器 ROS 通信。'
   echo '先在电脑构建：./build.sh --packages-select moveit_config sim_controller'
   exit 0
 fi

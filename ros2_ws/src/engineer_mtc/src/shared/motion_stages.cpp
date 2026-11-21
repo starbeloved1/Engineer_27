@@ -95,7 +95,10 @@ MotionStages::MotionStages(const rclcpp::Node::SharedPtr &node, const TaskSettin
 std::unique_ptr<mtc::Task> makeTask(const rclcpp::Node::SharedPtr &node, const TaskSettings &settings,
                                     const std::string &name)
 {
-  auto task = std::make_unique<mtc::Task>(name);
+  // Humble normalizes even a leading slash in the Task namespace.
+  // Use the bare node name for /engineer_mtc/{description,statistics,solution}.
+  auto task = std::make_unique<mtc::Task>(node->get_name());
+  task->setName(name);
   task->loadRobotModel(node);
   const auto &model = task->getRobotModel();
   if (!model->hasLinkModel(settings.tip) || !model->hasJointModelGroup(settings.group) ||

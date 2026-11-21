@@ -20,6 +20,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <thread>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 namespace engineer_mtc
 {
@@ -40,6 +41,9 @@ private:
   void plan(PlanRequest request, Trigger::Response &response);
   void checkFreshJoints();
   void publishTargets(const GraspTargets &, const builtin_interfaces::msg::Time &stamp);
+  void publishPreview(const Eigen::Isometry3d &start, const Eigen::Isometry3d &end,
+                      bool place);
+  void clearPreview();
   void setStatus(uint8_t phase, uint8_t stage, const std::string &detail);
   void publishStatus();
   void updateJoints(sensor_msgs::msg::JointState::ConstSharedPtr message);
@@ -93,6 +97,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr object_pub_, grasp_pub_,
       pregrasp_pub_;
   rclcpp::Publisher<moveit_msgs::msg::DisplayTrajectory>::SharedPtr display_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr preview_pub_;
   rclcpp::Publisher<Status>::SharedPtr status_pub_;
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr stage_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gripper_pub_;

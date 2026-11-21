@@ -47,13 +47,15 @@ class EnergyDisplay(Node):
         mesh = visual.find('geometry/mesh')
         self.mesh = mesh.get('filename')
         self.scale = [float(v) for v in mesh.get('scale', '1 1 1').split()]
-        self.publisher = self.create_publisher(Marker, '~/marker',
-            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+        qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.publisher = self.create_publisher(Marker, '~/marker', qos)
+        self.stored_publisher = self.create_publisher(Marker, '~/stored_marker', qos)
         self.client = self.create_client(GetPlanningScene, '/get_planning_scene')
         self.pending = None
         # 显示使用的场景查询 1 Hz 即可；规划和执行仍使用 MoveIt 的实时场景。
         self.timer = self.create_timer(1.0, self.query)
-        self.marker(False)
+        self.publisher.publish(self.marker())
+        self.stored_publisher.publish(self.marker())
 
     def query(self):
         if self.pending is not None:
@@ -70,26 +72,29 @@ class EnergyDisplay(Node):
         self.pending = None
         try:
             scene = future.result().scene
-            for attached in scene.robot_state.attached_collision_objects:
-                if attached.object.id == self.object_id:
-                    self.marker(True, attached.object.pose, attached.link_name, True)
-                    return
-            for obj in scene.world.collision_objects:
-                if obj.id == self.object_id:
-                    self.marker(True, obj.pose, obj.header.frame_id, False)
-                    return
-            self.marker(False)
+            attached = next((entry for entry in scene.robot_state.attached_collision_objects
+                             if entry.object.id == self.object_id), None)
+            world = {obj.id: obj for obj in scene.world.collision_objects}
+            active = world.get(self.object_id)
+            stored = world.get(f'{self.object_id}_stored')
+            if attached is not None:
+                self.publisher.publish(self.marker(attached.object.pose, attached.link_name, True))
+            else:
+                self.publisher.publish(self.world_marker(active))
+            self.stored_publisher.publish(self.world_marker(stored))
         except Exception as error:
             self.get_logger().warning(f'矿场景读取失败: {error}')
 
-    def marker(self, visible, pose=None, frame='world', attached=False):
+    def world_marker(self, obj):
+        return self.marker(obj.pose, obj.header.frame_id) if obj is not None else self.marker()
+
+    def marker(self, pose=None, frame='world', attached=False):
         m = Marker()
         m.header.frame_id = frame
-        m.header.stamp = self.get_clock().now().to_msg()
         m.ns = 'energy'
         m.id = 0
-        m.action = Marker.ADD if visible else Marker.DELETE
-        if visible:
+        m.action = Marker.ADD if pose is not None else Marker.DELETE
+        if pose is not None:
             m.type = Marker.MESH_RESOURCE
             m.mesh_resource = self.mesh
             m.mesh_use_embedded_materials = False
@@ -97,7 +102,7 @@ class EnergyDisplay(Node):
             m.scale.x, m.scale.y, m.scale.z = self.scale
             m.color.r, m.color.g, m.color.b, m.color.a = .70, .76, .82, 1.
             m.frame_locked = attached
-        self.publisher.publish(m)
+        return m
 
 
 def main():

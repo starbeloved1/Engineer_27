@@ -106,6 +106,8 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   pregrasp_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>("~/pregrasp_pose", qos);
   display_pub_ =
       create_publisher<moveit_msgs::msg::DisplayTrajectory>("~/display_planned_path", qos);
+  preview_pub_ = create_publisher<visualization_msgs::msg::MarkerArray>("~/preview_markers", qos);
+  clearPreview();
   vision_sub_ = create_subscription<geometry_msgs::msg::PoseArray>(
       text("pose_topic", "/vision/icp/object_poses"), rclcpp::QoS(1).reliable(),
       [this](geometry_msgs::msg::PoseArray::ConstSharedPtr m)
@@ -181,6 +183,8 @@ void MtcNode::setStatus(uint8_t phase, uint8_t stage, const std::string &detail)
     status_.stage = stage;
     status_.message = detail;
   }
+  if (phase == Status::CANCELED)
+    clearPreview();
   publishStatus();
   RCLCPP_INFO(get_logger(), "pick stage=%u phase=%u: %s", stage, phase, detail.c_str());
 }
@@ -437,6 +441,7 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
   command.unlock();
   moveit_msgs::msg::DisplayTrajectory empty;
   display_pub_->publish(empty);
+  clearPreview();
   try
   {
     if (place)
@@ -445,10 +450,14 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       energy_->checkStorage(storedObjectId(settings_.object_id), settings_.storage_contact_objects);
       const auto attached = energy_->attachedPose(settings_.tip);
       baseline_acm_ = energy_->collisionMatrix();
-      TaskSettings place_settings = settings_;
-      place_settings.storage_energy = xyzRpyTransform(get_parameter("storage_xyz").as_double_array(),
-                                                       get_parameter("storage_rpy").as_double_array());
-      task_ = createPlaceTask(shared_from_this(), place_settings, attached, CollisionMatrix(baseline_acm_));
+      const auto storage_energy = xyzRpyTransform(get_parameter("storage_xyz").as_double_array(),
+                                                  get_parameter("storage_rpy").as_double_array());
+      const Eigen::Isometry3d storage_tip = storage_energy * attached.inverse();
+      const Eigen::Isometry3d storage_tcp = storage_tip * settings_.tip_to_tcp;
+      Eigen::Isometry3d prestorage_tcp = storage_tcp;
+      prestorage_tcp.translation() -= settings_.storage_axis * settings_.storage_distance;
+      publishPreview(prestorage_tcp, storage_tcp, true);
+      task_ = createPlaceTask(shared_from_this(), settings_, storage_tip, CollisionMatrix(baseline_acm_));
     }
     else
     {
@@ -474,6 +483,7 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
         preview_visible_ = true;
       }
       publishTargets(targets, target.header.stamp);
+      publishPreview(targets.pregrasp_tip_base * settings_.tip_to_tcp, targets.grasp_tcp_base, false);
       baseline_acm_ = energy_->collisionMatrix();
       task_ = createPickTask(shared_from_this(), settings_, targets, CollisionMatrix(baseline_acm_));
     }

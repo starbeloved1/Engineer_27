@@ -5,6 +5,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(moveit_msgs REQUIRED)
@@ -41,9 +42,10 @@ add_executable(engineer_mtc_node
   src/place/stage_5.cpp
   src/place/stage_6.cpp
   src/shared/energy_scene.cpp
+  src/shared/preview_markers.cpp
 )
 target_include_directories(engineer_mtc_node PRIVATE include)
-ament_target_dependencies(engineer_mtc_node rclcpp geometry_msgs sensor_msgs std_srvs moveit_msgs
+ament_target_dependencies(engineer_mtc_node rclcpp geometry_msgs visualization_msgs sensor_msgs std_srvs moveit_msgs
   moveit_core moveit_task_constructor_msgs moveit_task_constructor_core tf2_ros tf2_eigen std_msgs rclcpp_action
   moveit_ros_planning_interface urdf ament_index_cpp serial_driver)
 rosidl_get_typesupport_target(pick_typesupport ${PROJECT_NAME} rosidl_typesupport_cpp)

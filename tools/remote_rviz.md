@@ -34,6 +34,7 @@ cd ~/Engineer_27
 cd /home/jetson/Engineer_27
 export ROS_LOCALHOST_ONLY=0
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+./build.sh --packages-up-to engineer_mtc sim_controller
 ./run.sh mode:=mtc use_rviz:=false
 ```
 
@@ -48,9 +49,9 @@ cd ~/Engineer_27
 
 脚本加载本地模型及 MoveIt 参数，设置域 6、跨机器通信，并默认使用 Fast DDS。它只启动 RViz，不启动第二套控制器、robot_state_publisher、move_group 或 MTC。
 
-默认界面包括当前机器人、规划场景、矿模型、抓取目标坐标系，以及 MTC 的任务阶段面板和解动画。它没有相机图像或 PointCloud2 显示项。MTC 显示使用 `/engineer_mtc/solution`，并自动订阅同命名空间的 `description`、`statistics`。任务创建和规划后才有对应任务信息。
+默认界面包括当前机器人、规划场景、取矿和存车的 TCP 目标，以及单独显示的当前矿与槽内矿。MTC 面板使用 `/engineer_mtc/solution` 和同命名空间的 `description`、`statistics`。任务创建和规划后才会出现对应的信息。
 
-## 4. 只规划并查看完整预览
+## 4. 分别查看取矿与存车预览
 
 在已启动 ROS 的 Jetson 另一个终端中执行：
 
@@ -64,7 +65,9 @@ ros2 service call /engineer_mtc/plan std_srvs/srv/Trigger '{}'
 
 `plan` 使用已有的新鲜视觉目标，规划成功后返回 READY，预览覆盖阶段 1–3。拔离完成后用 `plan_place` 独立规划存车。需要有效关节状态、视觉位姿和对应 TF。现有 `plan_manual` 接口可用于手动目标，本文不提供未经标定的目标位置。
 
-在电脑 RViz 的 **Motion Planning Tasks** 面板展开 `energy: complete pick`，选择完整解或子阶段解进行播放。MTC 显示包含解中的场景变化，可查看抓取后的物体附着及放置过程。播放预览不需要调用 `/engineer_mtc/execute`。
+在 **Motion Planning Tasks** 面板选择 `external pick`（阶段 1–3）或 `place held energy`（阶段 4–6），点击对应的解播放。MTC 解包含规划时的附着和释放场景。播放动画不需要调用 `/engineer_mtc/execute`，存车规划服务仍需要实际或模拟执行到拔离成功。
+
+**Pick / Place TCP Targets** 显示当前请求使用的目标。取矿是橙色的 **Pregrasp → Grasp**，存车是青色的 **Pre-storage → Storage**。箭头只标示末端接近或入槽的直线方向。轨迹看 MTC 解或后备轨迹。新请求开始时清掉前一任务的目标，规划失败时可用已计算的目标排查，取消时清除目标。
 
 默认关闭普通 **Trajectory Fallback** 显示，避免与 MTC 解动画重叠；需要单纯查看完整关节轨迹时，可关闭 **MTC Stages and Solution** 后开启它，话题为 `/engineer_mtc/display_planned_path`。普通轨迹显示不包含完整的阶段场景变化。
 
@@ -86,4 +89,4 @@ ros2 topic echo /joint_states --once
 
 若节点可见但模型缺失，检查电脑是否已构建并加载 `moveit_config` 及模型资源。若 MTC 面板插件加载失败，确认安装了 Humble 对应的 `moveit_task_constructor_visualization`。不要复制 ARM64 的 `install/` 到 x86_64 电脑。
 
-当前验证范围：Jetson 上完成显示包构建、启动描述及配置检查；电脑的 OpenGL 渲染和跨机器 DDS 尚需在电脑端执行以上步骤验证。
+双机 DDS 连通性需在实际使用的电脑与 Jetson 上按上述步骤验证。

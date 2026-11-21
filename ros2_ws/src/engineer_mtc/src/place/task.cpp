@@ -4,14 +4,13 @@ namespace engineer_mtc
 {
 std::unique_ptr<mtc::Task> createPlaceTask(const rclcpp::Node::SharedPtr &node,
                                          const TaskSettings &settings,
-                                         const Eigen::Isometry3d &tip_to_energy,
+                                         const Eigen::Isometry3d &storage_tip,
                                          const CollisionMatrix &baseline)
 {
   auto task = makeTask(node, settings, "place held energy");
   const MotionStages motion(node, settings);
   const ContactPairs slot(baseline, settings.object_id, settings.storage_contact_objects);
   const ContactPairs gripper(baseline, settings.object_id, settings.touch_links);
-  const Eigen::Isometry3d storage_tip = settings.storage_energy * tip_to_energy.inverse();
   auto current = currentState();
   auto *start = current.get();
   task->add(std::move(current));
