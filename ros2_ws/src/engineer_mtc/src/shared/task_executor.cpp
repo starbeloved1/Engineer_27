@@ -1,4 +1,5 @@
 #include "engineer_mtc/mtc_node.hpp"
+#include "motion_stages.hpp"
 #include <cmath>
 #include <functional>
 #include <map>
@@ -42,6 +43,7 @@ void MtcNode::updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr 
 void MtcNode::prepareExecution()
 {
   std::array<bool, 6> found{};
+  stage_solutions_.fill(moveit_task_constructor_msgs::msg::Solution{});
   std::function<void(const moveit::task_constructor::SolutionBase &)> visit;
   visit = [&](const auto &solution)
   {
@@ -50,12 +52,24 @@ void MtcNode::prepareExecution()
     if (name.rfind("stage_", 0) == 0 && name.size() > 6 && name[6] >= '1' && name[6] <= '6')
     {
       const size_t i = name[6] - '1';
-      if (found[i])
-        throw std::runtime_error("业务阶段解重复");
+      if (i < next_stage_ || i >= end_stage_ || found[i])
+        throw std::runtime_error("业务阶段解超出当前任务范围或重复");
       stage_solutions_[i] = moveit_task_constructor_msgs::msg::Solution();
       solution.toMsg(stage_solutions_[i], &task_->introspection());
       if (stage_solutions_[i].sub_trajectory.empty())
         throw std::runtime_error("业务阶段解为空");
+      // MTC can serialize backward and connecting stages as full scenes. Only
+      // forward scene stages here change objects, and they already emit diffs.
+      // A full scene would discard obstacles added since the task was planned.
+      for (auto &segment : stage_solutions_[i].sub_trajectory)
+        if (!segment.scene_diff.is_diff)
+        {
+          moveit_msgs::msg::PlanningScene diff;
+          diff.is_diff = true;
+          diff.robot_state.is_diff = true;
+          diff.allowed_collision_matrix = std::move(segment.scene_diff.allowed_collision_matrix);
+          segment.scene_diff = std::move(diff);
+        }
       found[i] = true;
       return;
     }
@@ -68,9 +82,9 @@ void MtcNode::prepareExecution()
       visit(*wrapped->wrapped());
   };
   visit(*task_->solutions().front());
-  for (bool f : found)
-    if (!f)
-      throw std::runtime_error("完整解缺少业务阶段");
+  for (size_t i = next_stage_; i < end_stage_; ++i)
+    if (!found[i])
+      throw std::runtime_error("轨迹缺少阶段 " + std::to_string(i + 1));
 }
 
 void MtcNode::checkStart(const moveit_task_constructor_msgs::msg::Solution &solution)
@@ -145,6 +159,8 @@ void MtcNode::startExecution(bool next, Trigger::Response &response)
   }
   try
   {
+    if (execution_unconfirmed_)
+      throw std::runtime_error("旧轨迹是否停止或碰撞许可是否恢复尚未确认");
     uint8_t phase;
     {
       std::lock_guard<std::mutex> l(state_mutex_);
@@ -191,9 +207,15 @@ void MtcNode::runExecution()
       flag = false;
     }
   } release{busy_};
+  bool contact_in_progress = false;
+  bool stopping_timed_out = false;
+  const CollisionMatrix baseline(baseline_acm_);
+  const ContactPairs gripper(baseline, settings_.object_id, settings_.touch_links);
+  const ContactPairs slot(baseline, settings_.object_id,
+                          end_stage_ == 6 ? settings_.storage_contact_objects : std::vector<std::string>{});
   try
   {
-    while (next_stage_ < 6)
+    while (next_stage_ < end_stage_)
     {
       if (cancel_requested_ || !rclcpp::ok())
         throw std::runtime_error("执行已取消");
@@ -215,7 +237,8 @@ void MtcNode::runExecution()
         if (!rclcpp::ok() || std::chrono::steady_clock::now() > accept_deadline)
         {
           cancel_requested_ = true;
-          throw std::runtime_error("执行服务未确认接收");
+          execution_unconfirmed_ = true;
+          throw std::runtime_error("执行服务未确认接收，需检查实际动作状态");
         }
       auto handle = accepted.get();
       if (!handle)
@@ -224,6 +247,9 @@ void MtcNode::runExecution()
         std::lock_guard<std::mutex> l(goal_mutex_);
         active_goal_ = handle;
       }
+      contact_in_progress = index == 1 || index == 4;
+      if (index == 4)
+        extracted_ = false;
       if (cancel_requested_)
         execute_client_->async_cancel_goal(handle);
       double seconds = 0;
@@ -237,6 +263,7 @@ void MtcNode::runExecution()
       const auto deadline =
           std::chrono::steady_clock::now() + std::chrono::duration<double>(seconds * 1.5 + 10.);
       bool cancel_sent = cancel_requested_;
+      const auto stop_deadline = deadline + std::chrono::seconds(5);
       while (result.wait_for(std::chrono::milliseconds(50)) != std::future_status::ready)
       {
         if (!rclcpp::ok())
@@ -246,10 +273,18 @@ void MtcNode::runExecution()
           execute_client_->async_cancel_goal(handle);
           cancel_sent = true;
         }
-        if (std::chrono::steady_clock::now() > deadline)
+        const auto now_steady = std::chrono::steady_clock::now();
+        if (now_steady > deadline && !stopping_timed_out)
         {
-          execute_client_->async_cancel_goal(handle);
-          throw std::runtime_error("控制器执行超时，已请求取消，后续阶段停止");
+          stopping_timed_out = true;
+          if (!cancel_sent)
+            execute_client_->async_cancel_goal(handle);
+          cancel_sent = true;
+        }
+        if (now_steady > stop_deadline)
+        {
+          execution_unconfirmed_ = true;
+          throw std::runtime_error("控制器执行超时，尚未确认停止");
         }
       }
       const auto completed = result.get();
@@ -257,6 +292,8 @@ void MtcNode::runExecution()
         std::lock_guard<std::mutex> l(goal_mutex_);
         active_goal_.reset();
       }
+      if (stopping_timed_out)
+        throw std::runtime_error("控制器执行超时，已收到终态");
       if (cancel_requested_)
         throw std::runtime_error("执行已取消");
       if (completed.code != rclcpp_action::ResultCode::SUCCEEDED || !completed.result ||
@@ -270,7 +307,8 @@ void MtcNode::runExecution()
       bool confirmed = false;
       for (int retry = 0; retry < 20 && rclcpp::ok() && !cancel_requested_; ++retry)
       {
-        if (energy_->attached() == expected_attached && gripperAt(expected_closed))
+        if (energy_->attached() == expected_attached && gripperAt(expected_closed) &&
+            (index != 4 || energy_->stored(storedObjectId(settings_.object_id))))
         {
           confirmed = true;
           break;
@@ -278,16 +316,34 @@ void MtcNode::runExecution()
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
       }
       if (!confirmed)
-        throw std::runtime_error("阶段反馈不符合预期：夹爪或矿附着状态未确认");
+        throw std::runtime_error("阶段反馈不符合预期：夹爪或矿场景状态未确认");
       {
         std::lock_guard<std::mutex> l(state_mutex_);
         status_.object_attached = expected_attached;
       }
+      if (contact_in_progress)
+      {
+        energy_->restoreContacts(gripper, slot);
+        contact_in_progress = false;
+      }
       ++next_stage_;
-      if (next_stage_ == 6)
+      if (next_stage_ == end_stage_)
       {
         plan_valid_ = false;
-        setStatus(Status::SUCCEEDED, 6, "完整 pick 完成：矿已存放，机械臂已回位");
+        if (end_stage_ == 3)
+        {
+          extracted_ = true;
+          setStatus(Status::SUCCEEDED, 3, "矿已拔离并保持附着，可调用 plan_place");
+        }
+        else
+        {
+          {
+            std::lock_guard<std::mutex> scene_lock(scene_mutex_);
+            preview_visible_ = false;
+            owned_ = false;
+          }
+          setStatus(Status::SUCCEEDED, 6, "矿已存放，机械臂已回位");
+        }
         return;
       }
       if (execution_mode_ == "step")
@@ -302,12 +358,34 @@ void MtcNode::runExecution()
     plan_valid_ = false;
     if (rclcpp::ok())
     {
+      std::string detail = e.what();
+      if (contact_in_progress)
+      {
+        contact_state_needs_review_ = true;
+        if (!execution_unconfirmed_)
+        {
+          try
+          {
+            energy_->restoreContacts(gripper, slot);
+          }
+          catch (const std::exception &error)
+          {
+            execution_unconfirmed_ = true;
+            detail += "；";
+            detail += error.what();
+          }
+        }
+      }
+      const bool attached = energy_->attached();
+      owned_ = attached || contact_state_needs_review_ || execution_unconfirmed_;
       {
         std::lock_guard<std::mutex> l(state_mutex_);
-        status_.object_attached = energy_->attached();
+        status_.object_attached = attached;
       }
+      if (end_stage_ == 6 && next_stage_ == 5)
+        detail = "矿已释放并完成退爪，回位未完成：" + detail;
       setStatus(cancel_requested_ ? Status::CANCELED : Status::FAILED,
-                static_cast<uint8_t>(std::min(next_stage_ + 1, size_t(6))), e.what());
+                static_cast<uint8_t>(std::min(next_stage_ + 1, end_stage_)), detail);
     }
   }
 }

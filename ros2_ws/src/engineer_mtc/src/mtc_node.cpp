@@ -1,4 +1,5 @@
 #include "engineer_mtc/mtc_node.hpp"
+#include "shared/motion_stages.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
 #include <moveit/planning_scene/planning_scene.h>
@@ -38,7 +39,7 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   settings_.max_ik_solutions = max_ik;
   settings_.include_approach = parameter(*this, "include_approach", true);
   if (!settings_.include_approach)
-    throw std::invalid_argument("完整 pick 要求 include_approach=true");
+    throw std::invalid_argument("外部取矿要求 include_approach=true");
   max_target_age_ = parameter(*this, "max_target_age", 1.5);
   max_joint_age_ = parameter(*this, "max_joint_age", 1.0);
   hardware_timeout_ = parameter(*this, "hardware_status_timeout", .1);
@@ -73,6 +74,8 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   settings_.approach_axis = axis("approach_axis", {1, 0, 0});
   settings_.extraction_axis = axis("extraction_axis",
                                  {.000000116949, .002550757964758, -.999996746811604});
+  settings_.storage_axis = axis("storage_insertion_axis", {0, 0, -1});
+  settings_.storage_contact_objects = parameter(*this, "storage_contact_objects", std::vector<std::string>{});
   settings_.extraction_distance = parameter(*this, "extraction_distance", .10);
   settings_.storage_distance = parameter(*this, "storage_distance", .10);
   settings_.retreat_distance = parameter(*this, "retreat_distance", .07);
@@ -132,10 +135,13 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
                                    service_group_);
   };
   plan_service_ = service("~/plan", [this](Trigger::Request::SharedPtr,
-                                           Trigger::Response::SharedPtr r) { plan(false, *r); });
+                                           Trigger::Response::SharedPtr r) { plan(PlanRequest::Vision, *r); });
   manual_service_ =
       service("~/plan_manual", [this](Trigger::Request::SharedPtr, Trigger::Response::SharedPtr r)
-              { plan(true, *r); });
+              { plan(PlanRequest::Manual, *r); });
+  place_service_ =
+      service("~/plan_place", [this](Trigger::Request::SharedPtr, Trigger::Response::SharedPtr r)
+              { plan(PlanRequest::Place, *r); });
   execute_service_ =
       service("~/execute", [this](Trigger::Request::SharedPtr, Trigger::Response::SharedPtr r)
               { startExecution(false, *r); });
@@ -151,7 +157,7 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   status_.execution_mode = execution_mode_;
   setStatus(Status::IDLE, 0, "等待有效目标；plan 只规划，execute 执行");
   RCLCPP_INFO(get_logger(),
-              "MTC ready: complete pick; mode=%s; plan / execute / next_stage / cancel",
+              "MTC ready: mode=%s; plan / plan_place / execute / next_stage / cancel",
               execution_mode_.c_str());
 }
 
@@ -371,18 +377,20 @@ void MtcNode::publishTargets(const GraspTargets &targets,
   pregrasp_pub_->publish(m);
 }
 
-/*
-主链路 plan()
-  → selectTarget()          选择目标，检查目标和关节反馈是否有效
-  → targetInBase()          把矿位姿转换到 base_link
-  → computeGraspTargets()   计算抓取位置
-  → EnergyScene::put()      将矿碰撞模型加入场景
-  → createPregraspTask()    组装六阶段task
-  → task_->plan()           让 MTC 求解完整方案
-  → prepareExecution()      将方案整理成六个可执行阶段
-*/
-void MtcNode::plan(bool manual, Trigger::Response &response)
+void MtcNode::checkFreshJoints()
 {
+  std::lock_guard<std::mutex> lock(input_mutex_);
+  if (!joints_)
+    throw std::runtime_error("缺少新鲜 /joint_states");
+  const double age = (now() - rclcpp::Time(joints_->header.stamp)).seconds();
+  if (age < -.1 || age > max_joint_age_)
+    throw std::runtime_error("缺少新鲜 /joint_states");
+}
+
+void MtcNode::plan(PlanRequest request, Trigger::Response &response)
+{
+  const bool place = request == PlanRequest::Place;
+  const std::string task_name = place ? "持矿存车" : "外部取矿";
   std::unique_lock<std::mutex> command(command_mutex_);
   if (busy_.exchange(true))
   {
@@ -397,6 +405,11 @@ void MtcNode::plan(bool manual, Trigger::Response &response)
       flag = false;
     }
   } release{busy_};
+  if (execution_unconfirmed_)
+  {
+    response.message = "旧轨迹是否停止或碰撞许可是否恢复尚未确认，请检查控制器和规划场景";
+    return;
+  }
   {
     std::lock_guard<std::mutex> l(state_mutex_);
     if (status_.phase == Status::WAITING_NEXT)
@@ -405,8 +418,14 @@ void MtcNode::plan(bool manual, Trigger::Response &response)
       return;
     }
   }
+  if (place && (!extracted_ || !gripperAt(true)))
+  {
+    response.message = "存车需要已完成拔离并确认闭爪的矿";
+    return;
+  }
   plan_valid_ = false;
-  next_stage_ = 0;
+  next_stage_ = place ? 3 : 0;
+  end_stage_ = place ? 6 : 3;
   cancel_requested_ = false;
   if (worker_.joinable())
     worker_.join();
@@ -414,34 +433,50 @@ void MtcNode::plan(bool manual, Trigger::Response &response)
     std::lock_guard<std::mutex> l(state_mutex_);
     ++status_.task_id;
   }
-  setStatus(Status::PLANNING, 0, "规划六阶段完整 pick");
+  setStatus(Status::PLANNING, 0, "规划" + task_name);
   command.unlock();
   moveit_msgs::msg::DisplayTrajectory empty;
   display_pub_->publish(empty);
   try
   {
-    if (energy_->attached())
-      throw std::runtime_error("矿仍附着，不能用新目标覆盖；先处理当前持物状态");
-    const auto target = selectTarget(manual);
-    const auto targets =
-        computeGraspTargets(targetInBase(target), object_to_tcp_, settings_.tip_to_tcp,
-                            settings_.approach_axis, settings_.distance);
-    settings_.storage_energy = xyzRpyTransform(get_parameter("storage_xyz").as_double_array(),
-                                               get_parameter("storage_rpy").as_double_array());
-    owned_ = true;
+    if (place)
     {
-      std::lock_guard<std::mutex> l(scene_mutex_);
-      if (!energy_->put(targets.object_base))
-        throw std::runtime_error("添加矿到场景失败");
+      checkFreshJoints();
+      energy_->checkStorage(storedObjectId(settings_.object_id), settings_.storage_contact_objects);
+      const auto attached = energy_->attachedPose(settings_.tip);
+      baseline_acm_ = energy_->collisionMatrix();
+      TaskSettings place_settings = settings_;
+      place_settings.storage_energy = xyzRpyTransform(get_parameter("storage_xyz").as_double_array(),
+                                                       get_parameter("storage_rpy").as_double_array());
+      task_ = createPlaceTask(shared_from_this(), place_settings, attached, CollisionMatrix(baseline_acm_));
     }
+    else
     {
-      std::lock_guard<std::mutex> l(state_mutex_);
-      status_.target_valid = true;
-      status_.object_attached = false;
-      preview_visible_ = true;
+      if (energy_->attached())
+        throw std::runtime_error("矿仍附着，不能用新目标覆盖；先处理当前持物状态");
+      if (contact_state_needs_review_)
+        throw std::runtime_error("上次接触动作中断，请先确认矿和场景状态");
+      extracted_ = false;
+      const auto target = selectTarget(request == PlanRequest::Manual);
+      const auto targets =
+          computeGraspTargets(targetInBase(target), object_to_tcp_, settings_.tip_to_tcp,
+                              settings_.approach_axis, settings_.distance);
+      owned_ = true;
+      {
+        std::lock_guard<std::mutex> l(scene_mutex_);
+        if (!energy_->put(targets.object_base))
+          throw std::runtime_error("添加矿到场景失败");
+      }
+      {
+        std::lock_guard<std::mutex> l(state_mutex_);
+        status_.target_valid = true;
+        status_.object_attached = false;
+        preview_visible_ = true;
+      }
+      publishTargets(targets, target.header.stamp);
+      baseline_acm_ = energy_->collisionMatrix();
+      task_ = createPickTask(shared_from_this(), settings_, targets, CollisionMatrix(baseline_acm_));
     }
-    publishTargets(targets, target.header.stamp);
-    task_ = createPregraspTask(shared_from_this(), settings_, targets);
     task_->init();
     if (!task_->plan(1) || task_->solutions().empty())
     {
@@ -458,7 +493,7 @@ void MtcNode::plan(bool manual, Trigger::Response &response)
         }
       std::ostringstream reason;
       task_->explainFailure(reason);
-      throw std::runtime_error("MTC 没有完整六阶段解: " + reason.str());
+      throw std::runtime_error(task_name + "规划失败: " + reason.str());
     }
     // 与 cancel 串行提交规划结果，避免取消请求被刚生成的 READY 状态覆盖。
     std::lock_guard<std::mutex> commit(command_mutex_);
@@ -480,12 +515,12 @@ void MtcNode::plan(bool manual, Trigger::Response &response)
     display_pub_->publish(display);
     plan_valid_ = true;
     response.success = true;
-    response.message = "完整 pick 已规划，6 个业务阶段；调用 execute 开始运动";
+    response.message = task_name + "已规划，调用 execute 开始运动";
     setStatus(Status::READY, 0, response.message);
   }
   catch (const std::exception &error)
   {
-    owned_ = energy_->attached();
+    owned_ = contact_state_needs_review_ || energy_->attached();
     response.message = error.what();
     setStatus(cancel_requested_ ? Status::CANCELED : Status::FAILED, 0, response.message);
   }

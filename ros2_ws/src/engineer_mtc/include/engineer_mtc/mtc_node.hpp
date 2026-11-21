@@ -1,6 +1,6 @@
 #pragma once
 #include "engineer_mtc/energy_scene.hpp"
-#include "engineer_mtc/pregrasp_task.hpp"
+#include "engineer_mtc/tasks.hpp"
 #include "engineer_mtc/vision_target_buffer.hpp"
 #include <array>
 #include <atomic>
@@ -36,7 +36,9 @@ private:
   using GoalHandle = rclcpp_action::ClientGoalHandle<Execute>;
   geometry_msgs::msg::PoseStamped selectTarget(bool manual);
   Eigen::Isometry3d targetInBase(const geometry_msgs::msg::PoseStamped &target);
-  void plan(bool manual, Trigger::Response &response);
+  enum class PlanRequest { Vision, Manual, Place };
+  void plan(PlanRequest request, Trigger::Response &response);
+  void checkFreshJoints();
   void publishTargets(const GraspTargets &, const builtin_interfaces::msg::Time &stamp);
   void setStatus(uint8_t phase, uint8_t stage, const std::string &detail);
   void publishStatus();
@@ -67,7 +69,11 @@ private:
   std::chrono::steady_clock::time_point hardware_received_{};
   std::unique_ptr<moveit::task_constructor::Task> task_;
   std::array<moveit_task_constructor_msgs::msg::Solution, 6> stage_solutions_;
-  size_t next_stage_ = 0;
+  size_t next_stage_ = 0, end_stage_ = 3;
+  moveit_msgs::msg::AllowedCollisionMatrix baseline_acm_;
+  bool extracted_ = false;
+  bool contact_state_needs_review_ = false;
+  bool execution_unconfirmed_ = false;
   std::atomic<bool> plan_valid_{false};
   bool preview_visible_ = false;
   std::chrono::steady_clock::time_point last_preview_update_{};
@@ -82,7 +88,7 @@ private:
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr manual_sub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joints_sub_;
   rclcpp::Subscription<serial_driver::msg::HardwareStatus>::SharedPtr hardware_sub_;
-  rclcpp::Service<Trigger>::SharedPtr plan_service_, manual_service_, execute_service_,
+  rclcpp::Service<Trigger>::SharedPtr plan_service_, manual_service_, place_service_, execute_service_,
       next_service_, cancel_service_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr object_pub_, grasp_pub_,
       pregrasp_pub_;

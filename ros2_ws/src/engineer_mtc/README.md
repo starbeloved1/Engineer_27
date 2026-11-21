@@ -1,58 +1,44 @@
 # engineer_mtc
 
-基于 MoveIt Task Constructor（MTC）的能量单元取矿任务，完成抓取、拉取、车载存矿和回位
+同一个 ROS 包提供外部取矿和持矿存车。两个 MTC 任务各自读取当前关节状态。
 
-流程：视觉位姿 → 转换到基座坐标系 → 计算抓取目标 → 加入矿碰撞模型 → 规划完整 Task → 分阶段执行
+- `src/pick/task.cpp` 组装阶段 1–3。各阶段实现在同目录的 `stage_N.cpp`。
+- `src/place/task.cpp` 组装阶段 4–6。各阶段实现在同目录的 `stage_N.cpp`。
+- `src/shared/` 保存两任务使用的轨迹执行、运动阶段构造、矿场景和几何换算。
 
-## 取矿 Task
+## 阶段
 
-1. **stage 1：预抓取。**按 26 放宽碰撞，打开夹爪，规划到预抓取状态。
-2. **stage 2：夹取。**沿 TCP 接近方向直线移动，闭爪，将矿附着到末端。
-3. **stage 3：拉取。**保持夹持，沿矿坐标系的拉取轴外移，默认沿 PLY 的 +Z 拉取 0.10 m
-4. **stage 4：搬运。**将矿搬运到车载预存矿位置。
-5. **stage 5：存矿。**沿存矿坐标系的 -Z 放入，打开夹爪、解除附着，再反向退出，保持宽松碰撞策略。
-6. **stage 6：回位。**清理场景物体，机械臂回到 `home`，闭合空夹爪。
+| 阶段 | 动作 |
+|---|---|
+| 1 | 开爪，规划到预抓取位 |
+| 2 | 沿 TCP 方向直线接近，闭爪，将矿附着到末端 |
+| 3 | 保持夹持，沿矿坐标系的拉取轴拔离 |
+| 4 | 从实测关节位置持矿搬运到预存矿位 |
+| 5 | 直线入槽，松爪，解除附着，直线退爪 |
+| 6 | 回到 `home`，闭合空夹爪 |
 
-执行由 `src/core/pick_executor.cpp` 管理：
+## 服务
 
-- **auto**：每阶段执行成功并确认反馈后，自动进入下一阶段。
-- **step**：每阶段完成后暂停，调用 `next_stage` 才继续。
+1. 调用 `/engineer_mtc/plan` 使用视觉缓存，或调用 `/engineer_mtc/plan_manual` 使用手动缓存。两个入口都只规划阶段 1–3，成功后预览停在拔离。
+2. 调用 `/engineer_mtc/execute` 开始取矿。默认 `step`，每次收到 `WAITING_NEXT` 后调用 `/engineer_mtc/next_stage`。模式 `auto` 会自动执行当前任务内的后续阶段。
+3. 阶段 3 返回 `SUCCEEDED` 并报告矿已附着后，调用 `/engineer_mtc/plan_place`。它查询场景中的持矿变换，并用 MoveIt 当前关节状态规划阶段 4–6。随后再次调用 `execute`，分步模式继续使用 `next_stage`。
+4. `/engineer_mtc/cancel` 取消当前任务。存车规划失败时可以保持持矿状态重试。接触阶段执行中断后，请检查实物和场景再复位节点。执行器会在确认旧轨迹停止后恢复临时碰撞许可，并保留已经发生的附着或释放。
 
-## 话题含义说明
+接口的服务类型都是 `std_srvs/srv/Trigger`。例如在模拟终端调用存车规划：
 
-`/engineer_mtc/pick_stage`表示业务阶段，**0** 表示尚未进入动作，**1～6** 对应上述阶段
+```bash
+ros2 service call /engineer_mtc/plan_place std_srvs/srv/Trigger '{}'
+```
 
-`/engineer_mtc/pick_status`包含任务编号、阶段、运行状态、夹爪与附着状态、结果说明。
+`/engineer_mtc/pick_status` 保留任务号、阶段、夹爪与附着状态。阶段 0 表示尚未开始动作。状态值 0–7 依次对应 `IDLE`、`PLANNING`、`READY`、`EXECUTING`、`WAITING_NEXT`、`SUCCEEDED`、`FAILED`、`CANCELED`。阶段 3 的 `SUCCEEDED` 表示取矿结束，阶段 6 的 `SUCCEEDED` 表示存放和回位完成。
 
-- **0**：IDLE，空闲。
-- **1**：PLANNING，规划中。
-- **2**：READY，完整规划就绪，等待执行。
-- **3**：EXECUTING，当前阶段执行中。
-- **4**：WAITING_NEXT，分步模式下等待继续。
-- **5**：SUCCEEDED，完整任务完成。
-- **6**：FAILED，规划或执行失败。
-- **7**：CANCELED，已取消。
+`/engineer_mtc/display_planned_path` 预览当前任务。`object_pose_base`、`grasp_tcp`、`pregrasp_pose` 分别显示取矿所用的基座下矿模型原点、抓取 TCP、预抓取 `link_6`。这些话题位于 `/engineer_mtc` 下。`/gripper_close` 中 True 表示闭合，False 表示打开。
 
-`/gripper_close`用于指示夹爪开合，**True 为关，False 为开**
+## 碰撞与槽位配置
 
-`object_attached`表示规划场景中的附着关系。
-
-目标和轨迹预览话题：
-
-- `/engineer_mtc/object_pose_base`：本次规划使用的基座下 PLY 原点位姿。
-- `/engineer_mtc/grasp_tcp`：基座下抓取 TCP 目标。
-- `/engineer_mtc/pregrasp_pose`：基座下预抓取 `link_6` 目标。
-- `/engineer_mtc/display_planned_path`：完整规划轨迹预览。
-
-
-## 服务与执行接口
-
-- `/engineer_mtc/plan`：使用视觉缓存规划完整任务
-- `/engineer_mtc/plan_manual`：使用手动缓存规划完整任务
-- `/engineer_mtc/execute`：开始执行最近成功的完整规划
-- `/engineer_mtc/next_stage`：分步模式下继续下一阶段
-- `/engineer_mtc/cancel`：请求取消任务
-
+- 到预抓取和带矿搬运使用当前规划场景的碰撞矩阵。最后接近阶段临时允许目标矿与 `touch_links` 接触。附着后由附着体自身的 `touch_links` 维持接触，临时许可恢复。
+- `storage_xyz` 和 `storage_rpy` 定义槽内矿的目标位姿。`storage_insertion_axis` 定义 `base_link` 下独立的入槽方向，默认模拟使用 −Z。已建模的槽内接触面可通过 `storage_contact_objects` 指定，留空时所有这些碰撞照常检查。
+- 松爪后仅保留退爪所需的夹持接触许可。退爪结束后恢复碰撞矩阵，槽内矿以 `<object_id>_stored` 留在场景中，并参与回位碰撞检查。此 ID 存在时存车请求会报槽位已占用。确认在模拟中取走后，可从规划场景移除这个对象以再次存放。
 
 ## 静止目标多帧取样
 

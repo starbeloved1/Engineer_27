@@ -62,7 +62,7 @@ source tools/ros_env.sh
 ros2 service call /engineer_mtc/plan std_srvs/srv/Trigger '{}'
 ```
 
-`plan` 使用已有的新鲜视觉目标，规划成功后返回 READY，不自动执行。需要有效关节状态、视觉位姿和对应 TF。现有 `plan_manual` 接口可用于手动目标，本文不提供未经标定的目标位置。
+`plan` 使用已有的新鲜视觉目标，规划成功后返回 READY，预览覆盖阶段 1–3。拔离完成后用 `plan_place` 独立规划存车。需要有效关节状态、视觉位姿和对应 TF。现有 `plan_manual` 接口可用于手动目标，本文不提供未经标定的目标位置。
 
 在电脑 RViz 的 **Motion Planning Tasks** 面板展开 `energy: complete pick`，选择完整解或子阶段解进行播放。MTC 显示包含解中的场景变化，可查看抓取后的物体附着及放置过程。播放预览不需要调用 `/engineer_mtc/execute`。
 

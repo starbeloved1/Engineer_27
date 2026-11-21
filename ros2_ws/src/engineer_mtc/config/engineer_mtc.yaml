@@ -35,14 +35,15 @@ engineer_mtc:
     execution_mode: step
     gripper_group: gripper
     object_id: energy
-    touch_links: [link_6] # 额外接触 link；机械臂组已按 26 pick 整体允许与矿碰撞
+    touch_links: [link_6] # 夹取和带矿时允许接触目标矿的 link
     # T_PLY_energy：离线模型之间的变换
     # 此变换已移至 icp_registration 的 ply_to_energy 参数，MTC 不再应用。
     # 拉取轴在 URDF 中约为 -Z（朝大头），由原 PLY +Z 精确转换而来。
     extraction_axis: [0.000000116949, 0.002550757964758, -0.999996746811604]
     extraction_distance: 0.10 # m
-    storage_distance: 0.10 # 预存矿沿存矿坐标系的+Z偏移
-    # 当前预存矿位沿拉取轴退开此距离，再沿反方向放入；不再固定沿存矿 +Z 偏移。
+    storage_insertion_axis: [0.0, 0.0, -1.0] # 基座坐标系下的入槽方向
+    # storage_contact_objects: [slot_contact_surface] # 启用前确认 ID 已在场景中
+    storage_distance: 0.10 # 沿入槽方向直线移动的距离，m
     retreat_distance: 0.07 # 松爪后沿TCP接近方向的反向退出
     # 借用 26 左存矿位的 X/Y 与朝向，Z 抬高到 0.19 m 用于 27 模拟测试。
     # 27 仍按夹持关系换算 link_6 目标；此处不是 26 的夹爪末端目标，也未标定到 27 实物。

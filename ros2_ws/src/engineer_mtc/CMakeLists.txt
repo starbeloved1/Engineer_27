@@ -23,22 +23,24 @@ find_package(ament_index_cpp REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME} "msg/PickStatus.msg" DEPENDENCIES std_msgs)
 
-add_library(grasp_geometry src/object/grasp_geometry.cpp)
+add_library(grasp_geometry src/shared/grasp_geometry.cpp)
 target_include_directories(grasp_geometry PUBLIC include)
 target_link_libraries(grasp_geometry PUBLIC Eigen3::Eigen)
 ament_target_dependencies(grasp_geometry PUBLIC geometry_msgs)
 add_executable(engineer_mtc_node
   src/main.cpp
   src/mtc_node.cpp
-  src/core/pregrasp_task.cpp
-  src/core/pick_executor.cpp
-  src/core/stages/stage_1.cpp
-  src/core/stages/stage_2.cpp
-  src/core/stages/stage_3.cpp
-  src/core/stages/stage_4.cpp
-  src/core/stages/stage_5.cpp
-  src/core/stages/stage_6.cpp
-  src/object/energy_scene.cpp
+  src/pick/task.cpp
+  src/place/task.cpp
+  src/shared/motion_stages.cpp
+  src/shared/task_executor.cpp
+  src/pick/stage_1.cpp
+  src/pick/stage_2.cpp
+  src/pick/stage_3.cpp
+  src/place/stage_4.cpp
+  src/place/stage_5.cpp
+  src/place/stage_6.cpp
+  src/shared/energy_scene.cpp
 )
 target_include_directories(engineer_mtc_node PRIVATE include)
 ament_target_dependencies(engineer_mtc_node rclcpp geometry_msgs sensor_msgs std_srvs moveit_msgs
