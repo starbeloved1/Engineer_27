@@ -1,5 +1,5 @@
-#include "engineer_mtc/energy_scene.hpp"
-#include "motion_stages.hpp"
+#include "engineer_mtc/shared/energy_scene.hpp"
+#include "engineer_mtc/shared/motion_stages.hpp"
 #include <moveit_msgs/msg/planning_scene_components.hpp>
 #include <shape_msgs/msg/solid_primitive.hpp>
 #include <urdf/model.h>

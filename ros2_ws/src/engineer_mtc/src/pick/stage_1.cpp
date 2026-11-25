@@ -1,7 +1,8 @@
-#include "stages.hpp"
+#include "engineer_mtc/pick/stages.hpp"
 
 namespace engineer_mtc
 {
+// OMPL规划预抓取路径
 std::unique_ptr<mtc::SerialContainer> createStage1(const MotionStages &motion, const GraspTargets &targets)
 {
   auto stage = std::make_unique<mtc::SerialContainer>("stage_1: pregrasp");

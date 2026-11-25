@@ -6,4 +6,3 @@ engineer_mtc:
     tip_to_tcp_xyz: [0.12, 0.0, 0.0]
     tip_to_tcp_rpy: [0.0, 0.0, 0.0]
     object_to_tcp_xyz: [0.0, 0.0, 0.0]
-    # 存矿位继承 engineer_mtc.yaml 中的 26 左存矿位，不单独覆盖。

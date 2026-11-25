@@ -1,4 +1,4 @@
-#include "motion_stages.hpp"
+#include "engineer_mtc/shared/motion_stages.hpp"
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/task_constructor/storage.h>
 #include <moveit/task_constructor/trajectory_execution_info.h>
@@ -7,7 +7,6 @@ namespace engineer_mtc
 {
 namespace
 {
-// ComputeIK and the backward Cartesian segment inherit the monitored scene.
 class ContactPose : public mtc::stages::GeneratePose
 {
 public:

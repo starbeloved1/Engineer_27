@@ -1,5 +1,7 @@
-#include "engineer_mtc/mtc_node.hpp"
-#include "shared/motion_stages.hpp"
+#include "engineer_mtc/pick/task.hpp"
+#include "engineer_mtc/place/task.hpp"
+#include "engineer_mtc/node/mtc_node.hpp"
+#include "engineer_mtc/shared/motion_stages.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
 #include <limits>
@@ -252,6 +254,7 @@ void MtcNode::updateJoints(sensor_msgs::msg::JointState::ConstSharedPtr m)
     }
 }
 
+// SelectTarget() 选择目标
 geometry_msgs::msg::PoseStamped MtcNode::selectTarget(bool manual)
 {
   geometry_msgs::msg::PoseStamped target;
@@ -374,8 +377,7 @@ void MtcNode::previewTarget()
     publishStatus();
 }
 
-void MtcNode::publishTargets(const GraspTargets &targets,
-                             const builtin_interfaces::msg::Time &stamp)
+void MtcNode::publishTargets(const GraspTargets &targets,const builtin_interfaces::msg::Time &stamp)
 {
   geometry_msgs::msg::PoseStamped m;
   m.header.frame_id = settings_.base_frame;
@@ -398,8 +400,19 @@ void MtcNode::checkFreshJoints()
     throw std::runtime_error("缺少新鲜 /joint_states");
 }
 
+/*
+Plan() 主入口
+1.selectTarget() 拿到本次使用的矿位姿
+2.统一到基座坐标系，computeGraspTargets() 拿到打包好的 GraspTargets
+3.将矿加入规划场景，使用 energy_->put()
+4.发布位姿和可视化相关
+5.createPregraspTask()组装 stage_1，task_->plan() 生成预抓取候选
+6.createPickTailTask()组装 stage_2&3，tail->plan() 生成候选
+7.选择两段总cost最小的完整解，保存并发布结果
+*/
 void MtcNode::plan(PlanRequest request, Trigger::Response &response)
 {
+  // 检查
   const bool place = request == PlanRequest::Place;
   const std::string task_name = place ? "持矿存车" : "外部取矿";
   std::unique_lock<std::mutex> command(command_mutex_);
@@ -429,8 +442,6 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       return;
     }
   }
-  // 串口联调期间暂停存矿入口的夹爪闭合确认。
-  // if (place && (!extracted_ || !gripperAt(true)))
   if (place && !extracted_)
   {
     response.message = "存车需要已完成拔离的矿";
@@ -446,16 +457,19 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
     std::lock_guard<std::mutex> l(state_mutex_);
     ++status_.task_id;
   }
+
+  // 进入planning状态
   setStatus(Status::PLANNING, 0, "规划" + task_name);
   command.unlock();
   pick_tail_task_.reset();
   moveit_msgs::msg::DisplayTrajectory empty;
   display_pub_->publish(empty);
   clearPreview();
+
   try
   {
     std::optional<GraspTargets> pick_targets;
-    if (place)
+    if (place) // place 分支
     {
       checkFreshJoints();
       energy_->checkStorage(storedObjectId(settings_.object_id), settings_.storage_contact_objects);
@@ -470,7 +484,7 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       publishPreview(prestorage_tcp, storage_tcp, true);
       task_ = createPlaceTask(shared_from_this(), settings_, storage_tip, CollisionMatrix(baseline_acm_));
     }
-    else
+    else // pick 分支
     {
       if (energy_->attached())
         throw std::runtime_error("矿仍附着，不能用新目标覆盖；先处理当前持物状态");
@@ -478,8 +492,7 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
         throw std::runtime_error("上次接触动作中断，请先确认矿和场景状态");
       extracted_ = false;
       const auto target = selectTarget(request == PlanRequest::Manual);
-      pick_targets = computeGraspTargets(targetInBase(target), object_to_tcp_, settings_.tip_to_tcp,
-                                          settings_.approach_axis, settings_.distance);
+      pick_targets = computeGraspTargets(targetInBase(target), object_to_tcp_, settings_.tip_to_tcp,settings_.approach_axis, settings_.distance);
       const auto &targets = *pick_targets;
       owned_ = true;
       {
@@ -553,7 +566,7 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
         break;
       }
 
-      // 为每个预抓取末态独立规划抓取和拉出，按两份轨迹的总代价选解。
+      // 为每个预抓取末态独立规划抓取和拉出，按两份轨迹的总代价选解
       auto tail = createPickTailTask(shared_from_this(), settings_, *pick_targets, candidate->end()->scene());
       tail->init();
       if (!tail->plan(max_task_solutions) || tail->solutions().empty())
@@ -579,10 +592,10 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
           selected_tail_task = std::move(tail);
           selected_cost = cost;
         }
-        break;  // 同一预抓取末态只需保留代价最小的可执行尾段。
+        break; 
       }
     }
-    // 与 cancel 串行提交两份轨迹，避免取消请求被刚生成的 READY 状态覆盖。
+
     std::lock_guard<std::mutex> commit(command_mutex_);
     if (cancel_requested_)
       throw std::runtime_error("规划已取消");

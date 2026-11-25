@@ -13,7 +13,7 @@
 
 `vision_nodes/` 是功能分组目录，包含以下独立 ROS 包：
 
-1. **相机驱动 `camera_driver`**：启动官方 `realsense2_camera`，发布图像、内参、点云和相机 TF，同时提供 Foxglove Bridge 和 RViz 启动配置。
+1. **相机驱动 `camera_driver`**：启动官方 `realsense2_camera`，发布图像、内参、点云和相机 TF，同时提供 Foxglove Bridge 启动配置。
 2. **检测节点 `yolo_detector`**：订阅彩色图像，发布 YOLO 检测框或固定手动 ROI，并在同帧原图上绘制框。
 3. **模型发布节点 `model_cloud_publisher`**：读取 `assets/energy/energy.ply`，缩放为米、随机限点、体素降采样，发布 ICP 源点云。源码位于 `cloud_publisher/`。
 4. **配准节点 `icp_registration`**：使用内参和 TF 将点云投影到彩色图像，按框提取观测云，过滤后执行 PCL ICP，验收并修正位姿。

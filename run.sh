@@ -15,14 +15,12 @@ serial_driver/config/serial_driver.yaml 的 use_mock_hardware 选择模拟(true)
 机械臂 RViz 默认由 sim_controller/config/sim_controller.yaml 控制，use_rviz 可临时覆盖。
 vision：启动 vision_nodes 分组下的 D435、YOLO/叠框图像、PCL ICP、Bridge 和录像；请先关闭 RealSense Viewer。
 vision_pcl：保留为 vision 的兼容别名；各节点加载各自包内的 config。
-Foxglove 连接 ws://127.0.0.1:8765；vision 加 use_rviz:=true 打开相机视角 RViz，默认不打开。
-已有视觉流程时可单独执行 ros2 launch camera_driver vision_rviz.launch.py，仅打开显示窗口。
+Foxglove 连接 ws://127.0.0.1:8765，查看视觉图像和点云。
 各包 launch 独立加载默认 YAML，配置路径参数仅用于显式覆盖；Ctrl+C 统一退出。
 HELP
 }
 
 mode=mtc
-vision_use_rviz=false
 controller_arguments=()
 mtc_arguments=()
 start_camera=true
@@ -41,8 +39,7 @@ for argument in "$@"; do
     mode:=vision|mode:=mtc) mode="${argument#*:=}" ;;
     mode:=vision_pcl) mode=vision ;;
     use_rviz:=true|use_rviz:=false)
-      controller_arguments+=("$argument")
-      vision_use_rviz="${argument#*:=}" ;;
+      controller_arguments+=("$argument") ;;
     start_camera:=true|start_camera:=false) start_camera="${argument#*:=}" ;;
     start_detector:=true|start_detector:=false) start_detector="${argument#*:=}" ;;
     start_icp:=true|start_icp:=false) start_icp="${argument#*:=}" ;;
@@ -155,9 +152,6 @@ if [[ "$mode" == vision ]]; then
     start_launch camera_driver foxglove_bridge.launch.py "${bridge_arguments[@]}"
   fi
   start_launch video_recorder video_recorder.launch.py "${recorder_arguments[@]}"
-  if [[ "$vision_use_rviz" == true ]]; then
-    start_launch camera_driver vision_rviz.launch.py
-  fi
 else
   start_launch sim_controller sim_controller.launch.py "${controller_arguments[@]}"
   start_launch moveit_config moveit.launch.py

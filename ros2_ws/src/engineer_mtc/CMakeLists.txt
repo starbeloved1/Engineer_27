@@ -30,11 +30,12 @@ target_link_libraries(grasp_geometry PUBLIC Eigen3::Eigen)
 ament_target_dependencies(grasp_geometry PUBLIC geometry_msgs)
 add_executable(engineer_mtc_node
   src/main.cpp
-  src/mtc_node.cpp
+  src/node/mtc_node.cpp
+  src/shared/vision_target_buffer.cpp
   src/pick/task.cpp
   src/place/task.cpp
   src/shared/motion_stages.cpp
-  src/shared/task_executor.cpp
+  src/node/task_executor.cpp
   src/pick/stage_1.cpp
   src/pick/stage_2.cpp
   src/pick/stage_3.cpp
@@ -42,7 +43,7 @@ add_executable(engineer_mtc_node
   src/place/stage_5.cpp
   src/place/stage_6.cpp
   src/shared/energy_scene.cpp
-  src/shared/preview_markers.cpp
+  src/node/preview_markers.cpp
 )
 target_include_directories(engineer_mtc_node PRIVATE include)
 ament_target_dependencies(engineer_mtc_node rclcpp geometry_msgs visualization_msgs sensor_msgs std_srvs moveit_msgs
@@ -55,7 +56,7 @@ install(TARGETS engineer_mtc_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
 if(BUILD_TESTING)
   enable_testing()
-  add_executable(vision_target_test test/test_vision_target.cpp)
+  add_executable(vision_target_test test/test_vision_target.cpp src/shared/vision_target_buffer.cpp)
   target_link_libraries(vision_target_test grasp_geometry)
   add_test(NAME vision_target_test COMMAND vision_target_test)
 endif()

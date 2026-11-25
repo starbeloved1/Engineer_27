@@ -1,2 +1,2 @@
 use_rviz: true
-show_energy: true # 根据实际规划场景显示矿，没有有效目标时不生成默认矿
+show_energy: true 

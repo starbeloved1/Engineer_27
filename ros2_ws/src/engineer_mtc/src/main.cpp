@@ -1,4 +1,4 @@
-#include "engineer_mtc/mtc_node.hpp"
+#include "engineer_mtc/node/mtc_node.hpp"
 
 int main(int argc, char** argv)
 {

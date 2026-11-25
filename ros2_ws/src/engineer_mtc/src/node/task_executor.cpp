@@ -1,5 +1,5 @@
-#include "engineer_mtc/mtc_node.hpp"
-#include "motion_stages.hpp"
+#include "engineer_mtc/node/mtc_node.hpp"
+#include "engineer_mtc/shared/motion_stages.hpp"
 #include <cmath>
 #include <functional>
 #include <map>

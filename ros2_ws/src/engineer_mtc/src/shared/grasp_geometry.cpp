@@ -1,4 +1,4 @@
-#include "engineer_mtc/grasp_geometry.hpp"
+#include "engineer_mtc/shared/grasp_geometry.hpp"
 #include <cmath>
 #include <Eigen/Eigenvalues>
 #include <stdexcept>

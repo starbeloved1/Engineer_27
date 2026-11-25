@@ -13,9 +13,9 @@ yolo_detector:
     overlay_cloud_max_age: 1.5 # 与图像采集时间差上限，秒
     overlay_cloud_max_points: 3000 # 仅限制显示，不影响 ICP
     overlay_cloud_radius: 1 # 投影点半径，像素
-    visualization_jpeg_quality: 80 # 远程 compressed 图像 JPEG 质量，1~100
+    visualization_jpeg_quality: 80 # 远程图像 JPEG 质量，1~100
     visualization_rate_hz: 0.0 # 跟随检测结果
-    conf_thres: 0.5
+    conf_thres: 0.7
     iou_thres: 0.45
     device: gpu # 填入gpu或者cpu
     imgsz: 640 # yolo 输入

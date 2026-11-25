@@ -4,7 +4,9 @@
 
 - `src/pick/task.cpp` 分别组装阶段 1，以及阶段 2–3。第二个 Task 以第一个 Task 的规划末态为起点。
 - `src/place/task.cpp` 组装阶段 4–6。各阶段实现在同目录的 `stage_N.cpp`。
-- `src/shared/` 保存两任务使用的轨迹执行、运动阶段构造、矿场景和几何换算。
+- `src/node/` 保存节点业务入口、分阶段执行和目标预览；程序入口为 `src/main.cpp`。
+- `src/shared/` 保存运动阶段构造、矿场景、抓取几何换算和连续视觉观测缓存。
+- `include/engineer_mtc/` 按 `node/`、`pick/`、`place/`、`shared/` 与源码对应。各模块的 `task.hpp` 声明任务工厂，`stages.hpp` 声明业务阶段，共用参数位于 `shared/task_settings.hpp`。
 
 ## 阶段
 
