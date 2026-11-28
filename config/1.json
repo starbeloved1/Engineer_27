@@ -1,17 +1,17 @@
 {
   "debug": true,
-  "mode": "mtc",
-  "use_rviz": true,
+  "mode": "vision",
+  "use_rviz": false,
   "start_camera": true,
   "start_detector": true,
   "start_icp": true,
   "start_bridge": true,
   "parameters": {
     "engineer_mtc": {
-      "execution_mode": "auto"
+      "execution_mode": "step"
     },
     "serial_driver": {
-      "use_mock_hardware": false,
+      "use_mock_hardware": true,
       "mock_mode": 2,
       "serial_port": "/dev/ttyACM0"
     },

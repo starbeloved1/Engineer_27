@@ -23,7 +23,7 @@ icp_registration:
     min_points: 80 # ROI 提取和过滤后的观测点下限  
     sor_mean_k: 20 
     sor_std_mul: 0.8 # SOR 筛选阈值
-    max_range: 1.5 # 相机到点的欧氏距离< x m
+    max_range: 0.8 # 相机到点的欧氏距离< x m
     bbox_shrink_ratio: 0.0
     use_prev_init: true # 是否使用上次成功的revc与tevc作为初值
     fitness_threshold: 0.92 

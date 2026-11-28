@@ -3,12 +3,6 @@ Panels:
   Name: Displays
 - Class: sim_controller/MtcPanel
   Name: MTC 控制
-- Class: moveit_task_constructor/Motion Planning Tasks
-  Name: Motion Planning Tasks
-  Global Settings:
-    Task View Settings:
-      Show Computation Times: true
-      Task Expansion: All Expanded
 Visualization Manager:
   Displays:
   - Class: rviz_default_plugins/Grid
@@ -25,31 +19,13 @@ Visualization Manager:
       Durability Policy: Transient Local
     Visual Enabled: true
     Collision Enabled: false
-  - Class: moveit_task_constructor/Motion Planning Tasks
-    Name: MTC Stages and Solution
-    Enabled: true
-    Robot Description: robot_description
-    Task Solution Topic: /engineer_mtc/solution
-    Loop Animation: false
-    Interrupt Display: true
-    State Display Time: 0.05 s
-    Show Trail: false
-    Robot:
-      Robot Alpha: 0.65
-      Show Robot Visual: true
-      Show Robot Collision: false
-    Scene:
-      Value: true
-      Scene Alpha: 0.9
-    Markers:
-      Value: true
-      All at once?: false
   - Class: moveit_rviz_plugin/Trajectory
-    Name: Trajectory Fallback (enable if needed)
-    Enabled: false
+    Name: Complete Planned Trajectory
+    Enabled: true
     Robot Description: robot_description
     Color Enabled: true
     Robot Color: 255; 160; 0
+    Interrupt Display: true
     Trajectory Topic: /engineer_mtc/display_planned_path
     Loop Animation: false
     State Display Time: 0.05 s

@@ -82,6 +82,7 @@ private:
   /**
    * @brief 将选中的 MTC 解按业务阶段存入 stage_solutions_
    * @param task 解所属的 Task，用于轨迹序列化
+   * @note 当前直接序列化解，不访问 task 的 introspection；保留任务参数及原说明。
    * @param solution 当前任务选中的完整解
    * @param first_stage 起始数组下标，0 对应阶段 1
    * @param end_stage 结束数组下标，不包含此下标
@@ -129,6 +130,9 @@ private:
   std::chrono::steady_clock::time_point hardware_received_{};
 
   // 任务解与执行状态
+  std::mutex planning_mutex_;
+  moveit::task_constructor::Task *active_planning_task_ = nullptr;
+  moveit_msgs::msg::DisplayTrajectory replay_trajectory_;  // guarded by command_mutex_
   std::unique_ptr<moveit::task_constructor::Task> task_;
   std::unique_ptr<moveit::task_constructor::Task> pick_tail_task_;
   std::array<moveit_task_constructor_msgs::msg::Solution, 6> stage_solutions_;
@@ -155,7 +159,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joints_sub_;
   rclcpp::Subscription<serial_driver::msg::HardwareStatus>::SharedPtr hardware_sub_;
   rclcpp::Service<Trigger>::SharedPtr plan_service_, manual_service_, place_service_, execute_service_,
-      next_service_, cancel_service_;
+      next_service_, cancel_service_, replay_service_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr object_pub_, grasp_pub_,
       pregrasp_pub_;
   rclcpp::Publisher<moveit_msgs::msg::DisplayTrajectory>::SharedPtr display_pub_;

@@ -13,10 +13,10 @@ namespace sim_controller
 {
 namespace
 {
-const std::array<const char *, 6> service_names{
-    "plan", "plan_manual", "plan_place", "execute", "next_stage", "cancel"};
-const std::array<const char *, 6> button_names{
-    "视觉取矿规划", "手动目标规划", "持矿存车规划", "执行", "下一阶段", "取消任务"};
+const std::array<const char *, 7> service_names{
+    "plan", "plan_manual", "plan_place", "execute", "next_stage", "cancel", "replay"};
+const std::array<const char *, 7> button_names{
+    "视觉取矿规划", "手动目标规划", "持矿存车规划", "执行", "下一阶段", "取消任务", "重播规划（仅预览）"};
 const std::array<const char *, 8> phase_names{
     "空闲", "规划中", "规划就绪", "执行中", "等待下一阶段", "成功", "失败", "已取消"};
 } // namespace
@@ -86,6 +86,7 @@ void MtcPanel::request(size_t index)
   auto &command = commands_[index];
   if (!command.button->isEnabled() || command.pending) return;
   command.pending = true;
+  command.started = std::chrono::steady_clock::now();
   response_label_->setText(QString("等待服务返回 %1").arg(service_names[index]));
   updateControls();
   try
@@ -133,11 +134,12 @@ void MtcPanel::updateStatus(const Status &status)
 void MtcPanel::updateControls()
 {
   for (auto &command : commands_)
-    if (command.pending && !command.client->service_is_ready())
+    if (command.pending && (!command.client->service_is_ready() ||
+        std::chrono::steady_clock::now() - command.started > std::chrono::seconds(120)))
     {
       command.client->remove_pending_request(command.request_id);
       command.pending = false;
-      response_label_->setText("服务连接中断，请根据任务状态确认执行结果");
+      response_label_->setText("服务断开或等待超过 120 秒；请求等待已清除，后台任务不会自动取消。请查看任务状态，必要时点击取消任务。");
     }
   const bool pending = std::any_of(commands_.begin(), commands_.end(),
       [](const Command &command) { return command.pending; });
@@ -148,7 +150,8 @@ void MtcPanel::updateControls()
       can_plan, can_plan, can_plan && status_.object_attached,
       status_received_ && !pending && status_.phase == Status::READY,
       status_received_ && !pending && waiting && status_.execution_mode == "step",
-      pending || working || waiting || (status_received_ && status_.phase == Status::READY)};
+      pending || working || waiting || (status_received_ && status_.phase == Status::READY),
+      status_received_ && !pending && !working && status_.phase != Status::IDLE};
   for (size_t i = 0; i < commands_.size(); ++i)
   {
     const auto &command = commands_[i];

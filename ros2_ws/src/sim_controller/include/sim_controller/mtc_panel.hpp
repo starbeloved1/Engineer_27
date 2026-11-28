@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <memory>
 #include <engineer_mtc/msg/pick_status.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -26,13 +27,14 @@ public:
 private:
   using Trigger = std_srvs::srv::Trigger;
   using Status = engineer_mtc::msg::PickStatus;
-  enum CommandIndex { Plan, PlanManual, PlanPlace, Execute, Next, Cancel, CommandCount };
+  enum CommandIndex { Plan, PlanManual, PlanPlace, Execute, Next, Cancel, Replay, CommandCount };
   struct Command
   {
     QPushButton *button = nullptr;
     rclcpp::Client<Trigger>::SharedPtr client;
     bool pending = false;
     int64_t request_id = 0;
+    std::chrono::steady_clock::time_point started;
   };
 
   /// 异步发送指定服务请求，结果显示在面板中

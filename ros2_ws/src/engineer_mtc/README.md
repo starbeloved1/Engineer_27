@@ -26,6 +26,8 @@
 3. 阶段 3 返回 `SUCCEEDED` 并报告矿已附着后，调用 `/engineer_mtc/plan_place`。它查询场景中的持矿变换，并用 MoveIt 当前关节状态规划阶段 4–6。随后再次调用 `execute`，分步模式继续使用 `next_stage`。
 4. `/engineer_mtc/cancel` 取消当前任务。存车规划失败时可以保持持矿状态重试。接触阶段执行中断后，请检查实物和场景再复位节点。执行器会在确认旧轨迹停止后恢复临时碰撞许可，并保留已经发生的附着或释放。
 
+5. `/engineer_mtc/replay` 重播最近成功规划的完整轨迹，仅发布动画，不触发执行。新规划开始时清空旧缓存。任务不启用独立 MTC introspection 线程，RViz 使用合并后的 `DisplayTrajectory` 显示，避免短生命周期候选销毁时的线程退出竞态。
+
 接口的服务类型都是 `std_srvs/srv/Trigger`。例如在模拟终端调用存车规划：
 
 ```bash

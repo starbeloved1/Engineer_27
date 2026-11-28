@@ -46,6 +46,7 @@ void MtcNode::prepareExecution(moveit::task_constructor::Task &task,
                                const moveit::task_constructor::SolutionBase &selected,
                                size_t first_stage, size_t end_stage)
 {
+  (void)task;  // 解可直接序列化，避免访问 introspection 时重新创建可视化线程。
   std::array<bool, 6> found{};
   std::function<void(const moveit::task_constructor::SolutionBase &)> visit;
   visit = [&](const auto &solution)
@@ -58,7 +59,7 @@ void MtcNode::prepareExecution(moveit::task_constructor::Task &task,
       if (i < first_stage || i >= end_stage || found[i])
         throw std::runtime_error("业务阶段解超出当前任务范围或重复");
       stage_solutions_[i] = moveit_task_constructor_msgs::msg::Solution();
-      solution.toMsg(stage_solutions_[i], &task.introspection());
+      solution.toMsg(stage_solutions_[i]);
       if (stage_solutions_[i].sub_trajectory.empty())
         throw std::runtime_error("业务阶段解为空");
       // MTC can serialize backward and connecting stages as full scenes. Only
@@ -452,6 +453,10 @@ void MtcNode::cancel(Trigger::Response &response)
 {
   std::lock_guard<std::mutex> command(command_mutex_);
   cancel_requested_ = true;
+  {
+    std::lock_guard<std::mutex> lock(planning_mutex_);
+    if (active_planning_task_) active_planning_task_->preempt();
+  }
   {
     std::lock_guard<std::mutex> l(goal_mutex_);
     if (active_goal_)

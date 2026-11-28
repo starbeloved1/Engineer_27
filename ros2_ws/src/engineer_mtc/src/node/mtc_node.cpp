@@ -7,7 +7,6 @@
 #include <limits>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_model/robot_model.h>
-#include <moveit/task_constructor/introspection.h>
 #include <moveit/task_constructor/storage.h>
 #include <optional>
 #include <sstream>
@@ -161,6 +160,18 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
               { startExecution(true, *r); });
   cancel_service_ = service("~/cancel", [this](Trigger::Request::SharedPtr,
                                                Trigger::Response::SharedPtr r) { cancel(*r); });
+  replay_service_ = service("~/replay", [this](Trigger::Request::SharedPtr, Trigger::Response::SharedPtr r)
+  {
+    std::lock_guard<std::mutex> lock(command_mutex_);
+    if (busy_ || replay_trajectory_.trajectory.empty())
+    {
+      r->message = "当前没有可重播的完整规划";
+      return;
+    }
+    display_pub_->publish(replay_trajectory_);
+    r->success = true;
+    r->message = "已重播完整规划（仅动画预览）";
+  });
   execute_client_ =
       rclcpp_action::create_client<Execute>(this, "/execute_task_solution", service_group_);
   preview_timer_ =
@@ -168,7 +179,7 @@ MtcNode::MtcNode(const rclcpp::NodeOptions &options) : Node("engineer_mtc", opti
   status_.execution_mode = execution_mode_;
   setStatus(Status::IDLE, 0, "等待有效目标；plan 只规划，execute 执行");
   RCLCPP_INFO(get_logger(),
-              "MTC ready: mode=%s; plan / plan_place / execute / next_stage / cancel",
+              "MTC ready: mode=%s; plan / plan_place / execute / next_stage / cancel / replay",
               execution_mode_.c_str());
 }
 
@@ -448,6 +459,7 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
     return;
   }
   plan_valid_ = false;
+  replay_trajectory_ = moveit_msgs::msg::DisplayTrajectory{};
   next_stage_ = place ? 3 : 0;
   end_stage_ = place ? 6 : 3;
   cancel_requested_ = false;
@@ -461,13 +473,13 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
   // 进入planning状态
   setStatus(Status::PLANNING, 0, "规划" + task_name);
   command.unlock();
-  pick_tail_task_.reset();
   moveit_msgs::msg::DisplayTrajectory empty;
   display_pub_->publish(empty);
   clearPreview();
 
   try
   {
+    pick_tail_task_.reset();
     std::optional<GraspTargets> pick_targets;
     if (place) // place 分支
     {
@@ -512,7 +524,29 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
     }
     task_->init();
     const auto max_task_solutions = place ? 8 : 20;
-    if (!task_->plan(max_task_solutions) || task_->solutions().empty())
+    const auto solve = [this](moveit::task_constructor::Task &task, size_t count)
+    {
+      {
+        std::lock_guard<std::mutex> lock(planning_mutex_);
+        if (cancel_requested_) throw std::runtime_error("规划已取消");
+        active_planning_task_ = &task;
+      }
+      struct ClearActive
+      {
+        MtcNode *node;
+        ~ClearActive()
+        {
+          std::lock_guard<std::mutex> lock(node->planning_mutex_);
+          node->active_planning_task_ = nullptr;
+        }
+      } clear{this};
+      const auto result = task.plan(count);
+      if (cancel_requested_) throw std::runtime_error("规划已取消");
+      return result;
+    };
+    setStatus(Status::PLANNING, 0, task_name + "：正在规划主任务");
+    RCLCPP_INFO(get_logger(), "%s：开始主任务规划", task_name.c_str());
+    if (!solve(*task_, max_task_solutions) || task_->solutions().empty())
     {
       if (const auto *ik = task_->findChild("stage_1: pregrasp/pregrasp IK"))
         for (const auto &candidate : ik->solutions())
@@ -530,16 +564,16 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       throw std::runtime_error(task_name + "规划失败: " + reason.str());
     }
     std::unique_ptr<moveit::task_constructor::Task> selected_tail_task;
+    RCLCPP_INFO(get_logger(), "%s：主任务规划完成，%zu 个候选", task_name.c_str(), task_->solutions().size());
     moveit_task_constructor_msgs::msg::Solution serialized, serialized_tail;
     moveit::task_constructor::SolutionBaseConstPtr selected, selected_tail;
     double selected_cost = std::numeric_limits<double>::infinity();
     size_t complete_pick_candidates = 0;
     std::string rejected;
-    const auto serializeExecutable = [&](moveit::task_constructor::Task &task,
-                                         const moveit::task_constructor::SolutionBase &solution,
+    const auto serializeExecutable = [&](const moveit::task_constructor::SolutionBase &solution,
                                          moveit_task_constructor_msgs::msg::Solution &message)
     {
-      solution.toMsg(message, &task.introspection());
+      solution.toMsg(message);
       try
       {
         checkTrajectoryLimits(message);
@@ -551,12 +585,15 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       }
       return true;
     };
+    size_t candidate_index = 0;
     for (const auto &candidate : task_->solutions())
     {
+      ++candidate_index;
+      RCLCPP_INFO(get_logger(), "候选 %zu/%zu：开始序列化和轨迹检查", candidate_index, task_->solutions().size());
       if (cancel_requested_)
         throw std::runtime_error("规划已取消");
       moveit_task_constructor_msgs::msg::Solution candidate_message;
-      if (!serializeExecutable(*task_, *candidate, candidate_message))
+      if (!serializeExecutable(*candidate, candidate_message))
         continue;
       if (place)
       {
@@ -567,19 +604,24 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
       }
 
       // 为每个预抓取末态独立规划抓取和拉出，按两份轨迹的总代价选解
+      setStatus(Status::PLANNING, 0, "抓取拔出候选 " + std::to_string(candidate_index) + "/" + std::to_string(task_->solutions().size()));
+      RCLCPP_INFO(get_logger(), "候选 %zu：创建抓取和拔出任务", candidate_index);
       auto tail = createPickTailTask(shared_from_this(), settings_, *pick_targets, candidate->end()->scene());
       tail->init();
-      if (!tail->plan(max_task_solutions) || tail->solutions().empty())
+      RCLCPP_INFO(get_logger(), "候选 %zu：开始抓取和拔出规划", candidate_index);
+      if (!solve(*tail, max_task_solutions) || tail->solutions().empty())
       {
         std::ostringstream reason;
         tail->explainFailure(reason);
         rejected = "接近夹紧或拉出规划失败: " + reason.str();
         continue;
       }
+      RCLCPP_INFO(get_logger(), "候选 %zu：抓取和拔出规划完成，%zu 个解", candidate_index, tail->solutions().size());
       for (const auto &tail_candidate : tail->solutions())
       {
         moveit_task_constructor_msgs::msg::Solution tail_message;
-        if (!serializeExecutable(*tail, *tail_candidate, tail_message))
+        RCLCPP_INFO(get_logger(), "候选 %zu：开始抓取和拔出轨迹检查", candidate_index);
+        if (!serializeExecutable(*tail_candidate, tail_message))
           continue;
         ++complete_pick_candidates;
         const double cost = candidate->cost() + tail_candidate->cost();
@@ -589,13 +631,19 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
           serialized_tail = std::move(tail_message);
           selected = candidate;
           selected_tail = tail_candidate;
+          RCLCPP_INFO(get_logger(), "候选 %zu：更新最优解，释放旧候选任务", candidate_index);
           selected_tail_task = std::move(tail);
+          RCLCPP_INFO(get_logger(), "候选 %zu：最优解更新完成", candidate_index);
           selected_cost = cost;
         }
         break; 
       }
+      RCLCPP_INFO(get_logger(), "候选 %zu：开始清理未选中的任务", candidate_index);
+      tail.reset();
+      RCLCPP_INFO(get_logger(), "候选 %zu：清理完成", candidate_index);
     }
 
+    RCLCPP_INFO(get_logger(), "%s：候选处理完成，开始提交规划结果", task_name.c_str());
     std::lock_guard<std::mutex> commit(command_mutex_);
     if (cancel_requested_)
       throw std::runtime_error("规划已取消");
@@ -616,12 +664,11 @@ void MtcNode::plan(PlanRequest request, Trigger::Response &response)
           display.trajectory.push_back(segment.trajectory);
     if (display.trajectory.empty())
       throw std::runtime_error("完整解没有运动轨迹");
-    task_->introspection().publishSolution(*selected);
     if (selected_tail)
     {
-      selected_tail_task->introspection().publishSolution(*selected_tail);
       pick_tail_task_ = std::move(selected_tail_task);
     }
+    replay_trajectory_ = display;
     display_pub_->publish(display);
     plan_valid_ = true;
     response.success = true;

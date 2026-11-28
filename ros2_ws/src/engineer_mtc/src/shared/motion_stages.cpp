@@ -111,7 +111,10 @@ std::unique_ptr<mtc::Task> makeTask(const rclcpp::Node::SharedPtr &node, const T
 {
   // Humble normalizes even a leading slash in the Task namespace.
   // Use the bare node name for /engineer_mtc/{description,statistics,solution}.
-  auto task = std::make_unique<mtc::Task>(node->get_name());
+  // 上述为原任务命名约定；当前预览改用完整轨迹，以下关闭独立 introspection。
+  // Use the complete DisplayTrajectory for preview. Never create per-task
+  // introspection executors: short-lived candidates can race cancel() with spin().
+  auto task = std::make_unique<mtc::Task>(node->get_name(), false);
   task->setName(name);
   if (robot_model)
     task->setRobotModel(robot_model);

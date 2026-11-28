@@ -66,9 +66,11 @@ Jetson 运行 `./run.sh mode:=mtc use_rviz:=false`，Ubuntu 22.04 电脑运行 `
 
 ## RViz 任务控制
 
-构建 `sim_controller` 后，本机和远程 MTC RViz 都会加载 **MTC 控制**面板，提供视觉取矿规划、手动目标规划、持矿存车规划、执行、下一阶段和取消按钮。面板调用现有 MTC 服务，并显示 `/engineer_mtc/pick_status` 的任务阶段和结果。
+构建 `sim_controller` 后，本机和远程 MTC RViz 都会加载 **MTC 控制**面板，提供视觉取矿规划、手动目标规划、持矿存车规划、执行、下一阶段、取消和重播规划按钮。面板调用现有 MTC 服务，并显示 `/engineer_mtc/pick_status` 的任务阶段和结果。
 
-本机和远程使用同一份 `sim_controller/config/mtc.rviz`，包含完整的 MTC 阶段与解浏览、轨迹动画、规划场景、当前机器人、取矿与存车 TCP 标记，以及当前矿和槽内矿显示。
+本机和远程使用同一份 `sim_controller/config/mtc.rviz`，默认显示当前任务的完整轨迹动画、规划场景、当前机器人、取矿与存车 TCP 标记，以及当前矿和槽内矿显示。
+
+“重播规划（仅预览）”调用 `/engineer_mtc/replay`，从头播放最近成功规划的完整动画，不驱动机械臂。取矿阶段 1–3 连续预览，存车阶段 4–6 连续预览。新规划会作废旧预览缓存。规划就绪后可直接再次点击视觉取矿规划。面板等待服务超过 120 秒会清除本地等待，但不会擅自取消后台任务；后台规划期间仍可点击取消任务。
 
 需要逐阶段调试时，将 JSON 中的 `parameters.engineer_mtc.execution_mode` 设为 `step`，规划后点击执行，收到等待下一阶段状态后点击下一阶段。`auto` 模式连续执行当前任务。手动目标规划使用节点已有的手动位姿缓存。
 
