@@ -107,6 +107,8 @@ private:
   bool gripperAt(bool closed);
   /// 检查反馈时效、自动取矿控制权、发送使能及夹爪故障状态
   void checkHardware();
+  /// 仅在执行或等待执行下一阶段时要求硬件控制权，纯规划和重播不参与。
+  bool executionNeedsHardware();
   /// 缓存硬件反馈；控制权变化或反馈失效时请求取消当前任务
   void updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr message);
 

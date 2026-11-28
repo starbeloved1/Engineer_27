@@ -319,7 +319,8 @@ Eigen::Isometry3d MtcNode::targetInBase(const geometry_msgs::msg::PoseStamped &t
 
 void MtcNode::previewTarget()
 {
-  if ((busy_ || plan_valid_) && !cancel_requested_)
+  // 规划和 READY 预览不检查执行使能，模拟控制器未激活时仍可规划。
+  if (executionNeedsHardware() && !cancel_requested_)
   {
     try { checkHardware(); }
     catch (const std::exception &e)

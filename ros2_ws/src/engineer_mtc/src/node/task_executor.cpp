@@ -20,6 +20,12 @@ void MtcNode::checkHardware()
     throw std::runtime_error("当前未取得自动取矿控制权，或夹爪存在故障／堵转");
 }
 
+bool MtcNode::executionNeedsHardware()
+{
+  std::lock_guard<std::mutex> lock(state_mutex_);
+  return status_.phase == Status::EXECUTING || status_.phase == Status::WAITING_NEXT;
+}
+
 void MtcNode::updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr message)
 {
   bool changed;
@@ -29,7 +35,9 @@ void MtcNode::updateHardware(serial_driver::msg::HardwareStatus::ConstSharedPtr 
     hardware_ = message;
     hardware_received_ = std::chrono::steady_clock::now();
   }
-  if (busy_ || plan_valid_)
+  // busy_ 也覆盖纯规划，plan_valid_ 仅表示有轨迹；两者均不要求发送使能。
+  // 执行前仍由 checkStart 严格检查，执行及分步等待期间持续监测。
+  if (executionNeedsHardware())
   {
     std::string reason = changed ? "硬件控制权发生变化" : "";
     try { checkHardware(); } catch (const std::exception &e) { reason = e.what(); }
