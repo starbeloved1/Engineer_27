@@ -4,4 +4,4 @@ from sim_controller.launch_support import rviz_node
 
 
 def generate_launch_description():
-    return LaunchDescription([rviz_node(mtc_details=True)])
+    return LaunchDescription([rviz_node()])

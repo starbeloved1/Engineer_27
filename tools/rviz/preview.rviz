@@ -27,10 +27,13 @@ Visualization Manager:
       Collision Enabled: false
     - Class: rviz_default_plugins/TF
       Name: TF
-      Enabled: false
+      Enabled: true
       Show Axes: true
       Show Names: true
       Show Arrows: false
+      Marker Scale: 0.4
+      Frames:
+        All Enabled: true
   Global Options:
     Fixed Frame: base_link
     Background Color: 48; 48; 48
@@ -39,6 +42,7 @@ Visualization Manager:
     - Class: rviz_default_plugins/Interact
     - Class: rviz_default_plugins/MoveCamera
     - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
   Views:
     Current:
       Class: rviz_default_plugins/Orbit

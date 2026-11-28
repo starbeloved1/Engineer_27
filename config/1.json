@@ -1,0 +1,33 @@
+{
+  "debug": true,
+  "mode": "mtc",
+  "use_rviz": true,
+  "start_camera": true,
+  "start_detector": true,
+  "start_icp": true,
+  "start_bridge": true,
+  "parameters": {
+    "engineer_mtc": {
+      "execution_mode": "auto"
+    },
+    "serial_driver": {
+      "use_mock_hardware": false,
+      "mock_mode": 2,
+      "serial_port": "/dev/ttyACM0"
+    },
+    "video_recorder": {
+      "video": false
+    },
+    "icp_registration": {
+      "use_hexagon_prior": true
+    },
+    "yolo_detector": {
+      "use_manual_roi": false,
+      "auto_lock_detection": true,
+      "conf_thres": 0.7,
+      "iou_thres": 0.45,
+      "device": "gpu",
+      "imgsz": 640
+    }
+  }
+}

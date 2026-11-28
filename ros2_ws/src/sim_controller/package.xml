@@ -5,6 +5,12 @@
   <maintainer email="engineer27@example.com">Engineer 27 Team</maintainer><license>TODO</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
+  <depend>engineer_mtc</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rviz_common</depend>
+  <depend>std_srvs</depend>
+  <depend>qtbase5-dev</depend>
   <exec_depend>moveit_config</exec_depend>
   <exec_depend>serial_driver</exec_depend>
   <exec_depend>launch</exec_depend><exec_depend>launch_ros</exec_depend><exec_depend>ament_index_python</exec_depend>

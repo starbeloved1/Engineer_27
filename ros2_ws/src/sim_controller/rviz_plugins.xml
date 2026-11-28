@@ -1,0 +1,5 @@
+<library path="mtc_panel">
+  <class name="sim_controller/MtcPanel" type="sim_controller::MtcPanel" base_class_type="rviz_common::Panel">
+    <description>MTC 规划、分阶段执行及任务状态面板</description>
+  </class>
+</library>

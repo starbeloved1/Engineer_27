@@ -14,4 +14,4 @@ source /opt/ros/humble/setup.bash
 export ROS_DOMAIN_ID="${D435_PREVIEW_DOMAIN_ID:-86}"
 export ROS_LOCALHOST_ONLY=1
 exec /usr/bin/python3 /opt/ros/humble/bin/ros2 launch "$tools_dir/preview.launch.py" \
-  camera:=true "rviz_config:=$tools_dir/camera_preview.rviz" "$@"
+  camera:=true "rviz_config:=$tools_dir/rviz/camera_preview.rviz" "$@"

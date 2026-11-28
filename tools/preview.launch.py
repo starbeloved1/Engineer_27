@@ -133,7 +133,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument("gui", default_value="true"),
         DeclareLaunchArgument("rviz", default_value="true"),
-        DeclareLaunchArgument("rviz_config", default_value=str(Path(__file__).with_name("preview.rviz"))),
+        DeclareLaunchArgument("rviz_config", default_value=str(Path(__file__).resolve().parent / "rviz" / "preview.rviz")),
         DeclareLaunchArgument("joint_states", default_value="true"),
         DeclareLaunchArgument("camera", default_value="false"),
         OpaqueFunction(function=create_nodes),

@@ -5,14 +5,18 @@ engineer_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<'HELP'
-用法：./run.sh [mode:=mtc|vision] [use_rviz:=true|false]
+用法：./run.sh [--config FILE] [debug:=true|false] [mode:=mtc|vision] [use_rviz:=true|false]
                [hardware_config:=FILE] [controller_config:=FILE] [sim_config:=FILE] [mtc_config:=FILE]
                [start_camera:=true|false] [start_detector:=true|false] [start_icp:=true|false] [start_bridge:=true|false]
                [camera_config:=FILE] [vision_config:=FILE] [foxglove_config:=FILE]
                [yolo_python:=FILE]
+默认读取 config/1.json，命令行参数覆盖 JSON 中的同名配置。
+debug=true 按配置选择模式和开关；debug=false 同时启动 MTC 和完整视觉流程，使用包内默认配置，RViz 由 use_rviz 控制。
+--config FILE 可选择其他 JSON；JSON 中的相对路径以该文件所在目录为基准。
+debug=true 时，parameters 中的节点参数会合并到 .cache/startup 下的启动配置。
 默认 mtc：启动硬件控制、MoveIt、engineer_mtc 和任务 RViz；启动不自动执行运动。
-serial_driver/config/serial_driver.yaml 的 use_mock_hardware 选择模拟(true)/真实串口(false)，默认模拟。
-机械臂 RViz 默认由 sim_controller/config/sim_controller.yaml 控制，use_rviz 可临时覆盖。
+serial_driver/config/serial_driver.yaml 的 use_mock_hardware 选择模拟(true)/真实串口(false)。
+机械臂 RViz 由 use_rviz 控制，未配置时读取 sim_controller/config/sim_controller.yaml。
 vision：启动 vision_nodes 分组下的 D435、YOLO/叠框图像、PCL ICP、Bridge 和录像；请先关闭 RealSense Viewer。
 vision_pcl：保留为 vision 的兼容别名；各节点加载各自包内的 config。
 Foxglove 连接 ws://127.0.0.1:8765，查看视觉图像和点云。
@@ -20,6 +24,32 @@ Foxglove 连接 ws://127.0.0.1:8765，查看视觉图像和点云。
 HELP
 }
 
+startup_config="$engineer_root/config/1.json"
+command_arguments=()
+while (( $# )); do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --config)
+      if (( $# < 2 )) || [[ -z "$2" ]]; then
+        echo '--config 需要指定 JSON 文件' >&2
+        exit 2
+      fi
+      startup_config="$2"
+      shift 2 ;;
+    --config=*) startup_config="${1#*=}"; shift ;;
+    *) command_arguments+=("$1"); shift ;;
+  esac
+done
+if ! startup_arguments="$(/usr/bin/python3 "$engineer_root/tools/internal/read_startup_config.py" \
+    "$startup_config" "${command_arguments[@]}")"; then
+  exit 2
+fi
+launch_arguments=()
+if [[ -n "$startup_arguments" ]]; then
+  mapfile -t launch_arguments <<< "$startup_arguments"
+fi
+
+debug=true
 mode=mtc
 controller_arguments=()
 mtc_arguments=()
@@ -33,9 +63,10 @@ model_arguments=()
 icp_arguments=()
 bridge_arguments=()
 recorder_arguments=()
-for argument in "$@"; do
+for argument in "${launch_arguments[@]}"; do
   case "$argument" in
     -h|--help) usage; exit 0 ;;
+    debug:=true|debug:=false) debug="${argument#*:=}" ;;
     mode:=vision|mode:=mtc) mode="${argument#*:=}" ;;
     mode:=vision_pcl) mode=vision ;;
     use_rviz:=true|use_rviz:=false)
@@ -59,16 +90,25 @@ for argument in "$@"; do
   esac
 done
 
-source "$engineer_root/tools/ros_env.sh"
+active_modes=("$mode")
+if [[ "$debug" == false ]]; then
+  active_modes=(mtc vision)
+fi
+
+source "$engineer_root/tools/internal/ros_env.sh"
 
 # 同一工作区、同一 ROS 域中，每种模式只启动一套，避免同名控制器／状态话题冲突。
 cd "$engineer_root"
 mkdir -p "$engineer_root/.cache"
-exec {pipeline_lock_fd}>"$engineer_root/.cache/${mode}_${ROS_DOMAIN_ID:-0}.lock"
-if ! flock -n "$pipeline_lock_fd"; then
-  echo "本工作区 ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0} 的 ${mode} 流程已经在运行，请先在原终端按 Ctrl+C；本次未启动节点。" >&2
-  exit 1
-fi
+pipeline_lock_fds=()
+for active_mode in "${active_modes[@]}"; do
+  exec {pipeline_lock_fd}>"$engineer_root/.cache/${active_mode}_${ROS_DOMAIN_ID:-0}.lock"
+  if ! flock -n "$pipeline_lock_fd"; then
+    echo "本工作区 ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0} 的 ${active_mode} 流程已经在运行，请先在原终端按 Ctrl+C；本次未启动节点。" >&2
+    exit 1
+  fi
+  pipeline_lock_fds+=("$pipeline_lock_fd")
+done
 
 if [[ ! -f "$engineer_root/ros2_ws/install/setup.bash" ]]; then
   echo "请先运行 ./build.sh" >&2
@@ -137,7 +177,7 @@ start_launch() {
 }
 
 # 各模式的启动列表只在这里维护，不把视觉实验混入默认机械臂系统。
-if [[ "$mode" == vision ]]; then
+if [[ "$mode" == vision || "$debug" == false ]]; then
   if [[ "$start_camera" == true ]]; then
     start_launch camera_driver camera_driver.launch.py "${camera_arguments[@]}"
   fi
@@ -152,7 +192,8 @@ if [[ "$mode" == vision ]]; then
     start_launch camera_driver foxglove_bridge.launch.py "${bridge_arguments[@]}"
   fi
   start_launch video_recorder video_recorder.launch.py "${recorder_arguments[@]}"
-else
+fi
+if [[ "$mode" == mtc || "$debug" == false ]]; then
   start_launch sim_controller sim_controller.launch.py "${controller_arguments[@]}"
   start_launch moveit_config moveit.launch.py
   start_launch engineer_mtc engineer_mtc.launch.py "${mtc_arguments[@]}"
